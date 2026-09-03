@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo, o banco ai-first para PJ</title>
+<meta name="description" content="Conta PJ com caixa inteligente: a IA sugere, a regra decide, você aprova. Abra em 2 minutos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a1428;--sm:#101d36;--ink:#f4f1e6;--mut:#a9b4c8;--gd:#d4af37;--ln:rgba(244,241,230,.15);--rd:22px}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:Archivo,system-ui,sans-serif;margin:0;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(60rem 30rem at 85% -5%,rgba(212,175,55,.14),transparent);pointer-events:none}
+::selection{background:var(--gd);color:#0a1428}
+img{display:block;max-width:100%}
+a{color:inherit}
+.d{font-family:"Archivo Black",Archivo,sans-serif;font-weight:400;line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
+.s{font-family:"Instrument Serif",serif;font-style:italic;font-weight:400;text-transform:none;letter-spacing:0}
+.pl{position:fixed;inset:0;z-index:200;background:#070d1a;display:flex;align-items:flex-end;justify-content:space-between;padding:5vw;transition:opacity .7s ease,visibility .7s}
+.pl.g{opacity:0;visibility:hidden}
+.pl b{font-family:"Archivo Black",sans-serif;font-size:clamp(3rem,11vw,8rem);line-height:1}
+.pl b i{font-style:normal;color:var(--gd)}
+.pl span{font-size:.8rem;letter-spacing:.35em;text-transform:uppercase;color:var(--mut)}
+.cur{position:fixed;z-index:190;width:14px;height:14px;border-radius:50%;background:var(--gd);pointer-events:none;transform:translate(-50%,-50%);mix-blend-mode:difference;transition:width .25s,height .25s}
+@media(hover:none){.cur{display:none}}
+.hd{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.1rem 4vw;border-bottom:1px solid transparent;transition:background .35s,border-color .35s}
+.hd.f{background:rgba(10,20,40,.85);backdrop-filter:blur(14px);border-color:var(--ln)}
+.hd-l{font-family:"Archivo Black",sans-serif;font-size:1.2rem;text-decoration:none}
+.hd-l i{font-style:normal;color:var(--gd)}
+.hd-n{display:flex;gap:2rem}
+.hd-n a{text-decoration:none;font-size:.82rem;letter-spacing:.22em;text-transform:uppercase;color:var(--mut)}
+.hd-n a:hover{color:var(--gd)}
+.hd-c{background:var(--gd);color:#0a1428;border:0;border-radius:999px;padding:.8rem 1.6rem;font-weight:800;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;cursor:pointer;font-family:inherit}
+.hd-m{display:none;background:none;border:0;color:var(--ink);font-size:1.6rem;cursor:pointer}
+.hro{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.hro-i{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.12);animation:zm 9s ease-out forwards}
+@keyframes zm{to{transform:scale(1)}}
+.hro-v{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,20,40,.62),rgba(10,20,40,.18) 40%,rgba(10,20,40,.94))}
+.hro-x{position:relative;padding:0 4vw 4vh}
+.hro-s{display:inline-block;font-size:.78rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gd);border:1px solid rgba(212,175,55,.55);border-radius:999px;padding:.55rem 1.2rem;margin-bottom:1.4rem}
+.hro-t{font-size:clamp(2.8rem,10.5vw,9.5rem);margin:0}
+.hro-t .s{color:var(--gd)}
+.hro-p{max-width:34rem;color:#e8e4d4;font-size:clamp(1rem,1.6vw,1.2rem);line-height:1.6}
+.hro-a{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.8rem}
+.bt{display:inline-block;border-radius:999px;padding:1rem 2.1rem;font-weight:800;font-size:.85rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;cursor:pointer;border:1px solid transparent;font-family:inherit}
+.bt1{background:var(--gd);color:#0a1428}
+.bt1:hover{transform:translateY(-2px)}
+.bt2{border-color:var(--ln);color:var(--ink)}
+.bt2:hover{border-color:var(--gd);color:var(--gd)}
+.hro-f{position:relative;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ln);margin-top:3rem}
+.hro-f div{padding:1.2rem 4vw 1.6rem;border-left:1px solid var(--ln)}
+.hro-f div:first-child{border-left:0;padding-left:0}
+.hro-f b{font-family:"Archivo Black",sans-serif;font-size:clamp(1.3rem,2.4vw,2rem);display:block}
+.hro-f span{font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;color:var(--mut)}
+.mq{border-top:1px solid var(--ln);border-bottom:1px solid var(--ln);overflow:hidden;background:var(--gd);color:#0a1428;padding:.9rem 0}
+.mq-t{display:flex;gap:3rem;width:max-content;animation:mq 22s linear infinite;font-family:"Archivo Black",sans-serif;text-transform:uppercase;font-size:1rem;letter-spacing:.06em;white-space:nowrap}
+@keyframes mq{to{transform:translateX(-50%)}}
+.mn{padding:16vh 4vw;max-width:90rem}
+.mn p{font-size:clamp(1.6rem,4.2vw,3.4rem);line-height:1.25;margin:0;font-weight:600}
+.mn p .s{font-size:1.1em}
+.sc{padding:10vh 4vw}
+.sc-h{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;border-bottom:1px solid var(--ln);padding-bottom:1.2rem;margin-bottom:3rem}
+.sc-h h2{font-size:clamp(2rem,5.5vw,4.2rem);margin:0}
+.sc-h span{color:var(--mut);font-size:.8rem;letter-spacing:.3em;text-transform:uppercase}
+.sv-g{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
+.cd{background:var(--sm);border:1px solid var(--ln);border-radius:var(--rd);padding:2rem;transition:transform .35s,border-color .35s}
+.cd:hover{transform:translateY(-6px);border-color:rgba(212,175,55,.6)}
+.cd n{font-family:"Archivo Black",sans-serif;color:var(--gd);font-size:.85rem;letter-spacing:.2em}
+.cd h3{font-size:1.4rem;margin:.9rem 0 .6rem;text-transform:uppercase;font-family:"Archivo Black",sans-serif;font-weight:400}
+.cd p{color:var(--mut);line-height:1.65;margin:0 0 1.4rem}
+.cd f{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--ln);padding-top:1.1rem}
+.cd f b{color:var(--gd)}
+.cd f a{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gd);text-decoration:none;font-weight:800}
+.sim{background:linear-gradient(135deg,#101d36,#1a1408);border:1px solid rgba(212,175,55,.5);border-radius:calc(var(--rd) + 6px);margin:0 4vw;padding:3.5rem 3rem;display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
+.sim h2{font-size:clamp(1.8rem,4.5vw,3rem);margin:0 0 1rem}
+.sim p{color:var(--mut);line-height:1.7}
+.sim input[type=range]{width:100%;accent-color:var(--gd);margin:1.5rem 0 .5rem}
+.sim output{font-family:"Archivo Black",sans-serif;font-size:clamp(2.4rem,6vw,4.2rem);color:var(--gd);display:block;line-height:1.1}
+.sim small{color:var(--mut)}
+.card3d{width:100%;max-width:380px;aspect-ratio:1.6;border-radius:20px;background:linear-gradient(120deg,#1c2a4d,#0a1428 60%,#3a2f10);border:1px solid rgba(212,175,55,.6);padding:1.6rem;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 30px 60px rgba(0,0,0,.5);transform:perspective(900px) rotateY(-12deg);transition:transform .5s}
+.card3d:hover{transform:perspective(900px) rotateY(0)}
+.card3d span{font-size:.75rem;letter-spacing:.3em;color:var(--gd)}
+.card3d b{font-family:"Archivo Black",sans-serif;font-size:1.5rem;letter-spacing:.08em}
+.card3d i{font-style:normal;color:var(--mut);font-size:.85rem}
+.of{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ln);border-radius:calc(var(--rd) + 6px);overflow:hidden;margin:0 4vw}
+.of img{width:100%;height:100%;min-height:420px;object-fit:cover}
+.of-t{padding:4rem 3.5rem;background:var(--sm)}
+.of-t h2{font-size:clamp(1.8rem,3.6vw,2.8rem);margin:0 0 1.2rem}
+.of-t p{color:var(--mut);line-height:1.75}
+.of-t ul{list-style:none;padding:0;margin:1.6rem 0 2rem}
+.of-t li{padding:.9rem 0;border-top:1px solid var(--ln);display:flex;gap:.9rem;align-items:center}
+.of-t li::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--gd);flex:none}
+.ag{background:var(--sm);border:1px solid var(--ln);border-radius:calc(var(--rd) + 6px);margin:0 4vw;padding:4rem 3.5rem;display:grid;grid-template-columns:1fr 1fr;gap:3rem}
+.ag h2{font-size:clamp(2rem,4.5vw,3.4rem);margin:0 0 1rem}
+.ag p{color:var(--mut);line-height:1.7}
+.fm label{display:block;font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;color:var(--mut);margin:1.1rem 0 .5rem}
+.fm input,.fm select{width:100%;box-sizing:border-box;background:#0a1428;border:1px solid var(--ln);border-radius:14px;color:var(--ink);padding:1rem;font-size:1rem;font-family:inherit}
+.fm input:focus,.fm select:focus{outline:none;border-color:var(--gd)}
+.fm button{margin-top:1.6rem;width:100%}
+.fq-i{border-bottom:1px solid var(--ln)}
+.fq-q{width:100%;background:none;border:0;color:var(--ink);display:flex;justify-content:space-between;align-items:center;padding:1.5rem 0;font-size:1.1rem;font-weight:600;cursor:pointer;text-align:left;font-family:inherit}
+.fq-q i{font-style:normal;color:var(--gd);font-size:1.5rem;transition:transform .3s}
+.fq-i.o .fq-q i{transform:rotate(45deg)}
+.fq-a{max-height:0;overflow:hidden;transition:max-height .4s ease;color:var(--mut);line-height:1.7}
+.fq-a p{margin:0 0 1.5rem;max-width:44rem}
+.ft{padding:12vh 4vw 2rem;border-top:1px solid var(--ln);margin-top:10vh}
+.ft-g{font-size:clamp(2.8rem,11vw,10rem);margin:0}
+.ft-g .s{color:var(--gd)}
+.ft-r{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin:3rem 0;padding:2rem 0;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
+.ft-r h4{font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--mut);margin:0 0 1rem}
+.ft-r p,.ft-r a{line-height:2;color:var(--ink);text-decoration:none}
+.ft-b{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;color:var(--mut);font-size:.85rem}
+.rv{opacity:0;transform:translateY(36px);transition:opacity .8s ease,transform .8s ease}
+.rv.on{opacity:1;transform:none}
+@media(max-width:960px){.hd-n{display:none}.hd-m{display:block}.hd-n.o{display:flex;position:fixed;inset:0;background:#0a1428;flex-direction:column;align-items:center;justify-content:center;gap:2rem}.sv-g{grid-template-columns:1fr}.sim,.of,.ag{grid-template-columns:1fr}.hro-f{grid-template-columns:repeat(2,1fr)}.hro-f div:nth-child(3){border-left:0;padding-left:0}.ft-r{grid-template-columns:1fr}.sim{padding:2.2rem 1.4rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}html{scroll-behavior:auto}.rv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="pl" id="pl"><span>Banco ai-first</span><b><i id="pln">0</i>%</b></div>
+<div class="cur" id="cur"></div>
+<header class="hd" id="hd">
+<a class="hd-l" href="#topo">FLUXO<i>.</i></a>
+<nav class="hd-n" id="hdn">
+<a href="#conta">Conta</a>
+<a href="#simulador">Simulador</a>
+<a href="#tarifas">Tarifas</a>
+<a href="#abrir">Abrir conta</a>
+</nav>
+<a class="hd-c" href="#abrir">Abrir conta</a>
+<button class="hd-m" id="hdm" aria-label="Abrir menu">☰</button>
+</header>
+<section class="hro" id="topo">
+<img class="hro-i" src="https://unsplash.com/photos/Q59HmzK38eQ/download?w=2000&q=80&fm=jpg" alt="Empreendedor pagando com cartão no notebook" fetchpriority="high">
+<div class="hro-v"></div>
+<div class="hro-x">
+<span class="hro-s">Conta PJ ai-first</span>
+<h1 class="hro-t d">Seu caixa <span class="s">no piloto automático.</span></h1>
+<p class="hro-p">A IA sugere, a regra decide, você aprova. Conta PJ com caixa inteligente para quem vende todo dia.</p>
+<div class="hro-a">
+<a class="bt bt1" href="#abrir">Abrir em 2 minutos</a>
+<a class="bt bt2" href="#simulador">Simular rendimento</a>
+</div>
+<div class="hro-f">
+<div><b>Zero</b><span>mensalidade</span></div>
+<div><b>2 min</b><span>para abrir</span></div>
+<div><b>24 h</b><span>caixa vigiado</span></div>
+<div><b>100%</b><span>digital</span></div>
+</div>
+</div>
+</section>
+<div class="mq" aria-hidden="true"><div class="mq-t" id="mqt">
+<span>Pix ilimitado ★</span><span>Sem mensalidade ★</span><span>Caixa inteligente ★</span><span>Cartão sem anuidade ★</span><span>Boletos grátis ★</span><span>Suporte humano ★</span>
+</div></div>
+<section class="mn rv" id="conta">
+<p>Banco bom não te vende produto. <span class="s">Ele cuida do seu dinheiro</span> enquanto você cuida da venda. O resto é extrato bonito.</p>
+</section>
+<section class="sc">
+<div class="sc-h rv"><h2 class="d">Tudo incluído</h2><span>sem letra miúda</span></div>
+<div class="sv-g">
+<article class="cd rv"><n>01</n><h3>Caixa inteligente</h3><p>Projeção de entradas e saídas com alerta antes do aperto. A IA avisa, você decide.</p><f><b>Grátis</b><a href="#abrir">Abrir →</a></f></article>
+<article class="cd rv"><n>02</n><h3>Pix e boletos</h3><p>Pix ilimitado e boletos de cobrança com régua automática de lembretes.</p><f><b>Grátis</b><a href="#abrir">Abrir →</a></f></article>
+<article class="cd rv"><n>03</n><h3>Cartão PJ</h3><p>Crédito com limite que cresce com seu faturamento, sem anuidade e com controle por centro de custo.</p><f><b>Grátis</b><a href="#abrir">Abrir →</a></f></article>
+<article class="cd rv"><n>04</n><h3>Antecipação</h3><p>Antecipe recebíveis em 1 clique quando o caixa apertar, com taxa mostrada antes.</p><f><b>Consulte</b><a href="#abrir">Simular →</a></f></article>
+<article class="cd rv"><n>05</n><h3>Folha e sócios</h3><p>Pagamentos, pró-labore e divisão entre sócios com um toque e comprovante automático.</p><f><b>Grátis</b><a href="#abrir">Abrir →</a></f></article>
+<article class="cd rv"><n>06</n><h3>Contador junto</h3><p>Extrato categorizado e exportação pronta para a contabilidade, todo mês.</p><f><b>Grátis</b><a href="#abrir">Abrir →</a></f></article>
+</div>
+</section>
+<section class="sim rv" id="simulador">
+<div>
+<h2 class="d">Quanto rende <span class="s">seu caixa parado?</span></h2>
+<p>Arraste e veja. Simulação ilustrativa de rendimento do saldo parado, sem promessa de taxa.</p>
+<input type="range" id="smv" min="1000" max="200000" step="1000" value="20000" aria-label="Valor em caixa">
+<p>Caixa: <b id="smn" style="color:var(--gd)">R$ 20.000</b></p>
+</div>
+<div>
+<small>Rendimento estimado em 12 meses</small>
+<output id="smo">R$ 0</output>
+<small>Simulação ilustrativa. Rentabilidade passada não garante resultado futuro.</small>
+<div class="card3d" style="margin-top:1.6rem"><span>Fluxo PJ</span><b>•••• 4021</b><i>Titular da conta</i></div>
+</div>
+</section>
+<section class="sc" id="tarifas">
+<div class="sc-h rv"><h2 class="d">Tarifas</h2><span>uma tabela, inteira</span></div>
+<div class="sv-g">
+<article class="cd rv"><n>R$ 0</n><h3>Abertura e mensalidade</h3><p>Conta, cartão, pix e boletos sem custo fixo. O banco ganha quando você movimenta.</p><f><b>Sempre</b><a href="#abrir">Abrir →</a></f></article>
+<article class="cd rv"><n>1,99%</n><h3>Antecipação</h3><p>Taxa única mostrada antes de confirmar. Sem asterisco escondido no rodapé.</p><f><b>Por uso</b><a href="#abrir">Simular →</a></f></article>
+<article class="cd rv"><n>R$ 0</n><h3>TED, DOC e saques</h3><p>Transferências ilimitadas e 4 saques mensais na rede parceira.</p><f><b>Sempre</b><a href="#abrir">Abrir →</a></f></article>
+</div>
+</section>
+<div class="of rv">
+<img src="https://unsplash.com/photos/7WVgBu_dPBo/download?w=1400&q=80&fm=jpg" alt="Pagamento por aproximação com cartão" loading="lazy">
+<div class="of-t">
+<h2 class="d">Aprovação em 2 minutos.</h2>
+<p>Documento, selfie e CNPJ. Sem agência, sem gerente, sem papelada. A conta funciona na hora para receber.</p>
+<ul>
+<li>Abertura 100% digital</li>
+<li>Pix e boleto na hora</li>
+<li>Cartão virtual imediato</li>
+<li>Humano no suporte, sempre</li>
+</ul>
+<a class="bt bt1" href="#abrir">Começar agora</a>
+</div>
+</div>
+<section class="sc" id="abrir">
+<div class="sc-h rv"><h2 class="d">Abrir conta</h2><span>2 minutos</span></div>
+</section>
+<div class="ag rv">
+<div>
+<h2 class="d">Deixe seu contato. <span class="s">O resto é conosco.</span></h2>
+<p>Preencha e caia no WhatsApp com a mensagem pronta. Um especialista conclui sua abertura.</p>
+<p><b style="color:var(--gd)">Sem compromisso.</b><br>Leva menos que um café.</p>
+</div>
+<form class="fm" id="fm">
+<label for="fn">Seu nome</label>
+<input id="fn" type="text" placeholder="Como podemos chamar você" required autocomplete="name">
+<label for="fs">Faturamento mensal</label>
+<select id="fs"><option>Até R$ 30 mil</option><option>R$ 30 a 100 mil</option><option>R$ 100 a 500 mil</option><option>Acima de R$ 500 mil</option></select>
+<label for="fc">CNPJ</label>
+<input id="fc" type="text" placeholder="00.000.000/0000-00" required>
+<button class="bt bt1" type="submit">Abrir minha conta →</button>
+</form>
+</div>
+<section class="sc">
+<div class="sc-h rv"><h2 class="d">Dúvidas comuns</h2><span>faq</span></div>
+<div class="rv">
+<div class="fq-i"><button class="fq-q">A conta é de verdade, com Pix e tudo?<i>+</i></button><div class="fq-a"><p>Sim. Conta de pagamento completa: Pix, TED, boletos, cartão e extrato. O ai-first está na inteligência do caixa, não falta nada do básico.</p></div></div>
+<div class="fq-i"><button class="fq-q">A IA movimenta meu dinheiro sozinha?<i>+</i></button><div class="fq-a"><p>Nunca. A IA sugere, a regra valida e você aprova. Nenhum centavo sai sem um humano confirmar.</p></div></div>
+<div class="fq-i"><button class="fq-q">Meu dinheiro rende parado?<i>+</i></button><div class="fq-a"><p>O saldo rende automaticamente conforme o regulamento do produto. Use o simulador aqui do site para ter uma ideia.</p></div></div>
+<div class="fq-i"><button class="fq-q">Tem gerente de verdade?<i>+</i></button><div class="fq-a"><p>Tem. IA resolve o repetitivo, humano resolve o importante. Você escolhe como falar.</p></div></div>
+</div>
+</section>
+<footer class="ft">
+<h2 class="ft-g d">Bora <span class="s">crescer?</span></h2>
+<div class="ft-r">
+<div><h4>Conta</h4><p>Caixa inteligente<br>Pix e boletos<br>Cartão sem anuidade</p></div>
+<div><h4>Fale</h4><p><a href="https://wa.me/5511999990000" target="_blank" rel="noopener">WhatsApp</a><br><a href="#topo">Voltar ao topo ↑</a></p></div>
+<div><h4>Banco</h4><p>Tarifas abertas<br>Suporte humano<br>100% digital</p></div>
+</div>
+<div class="ft-b"><span>© <i id="yr">2026</i> Fluxo. Todos os giros reservados.</span><span>Fotos: Unsplash (uso livre).</span></div>
+</footer>
+<script>
+(function(){
+"use strict";
+var $=function(s,c){return (c||document).querySelector(s)};
+var $$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+var pl=$("#pl"),pln=$("#pln"),n=0;
+var rm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function hidePl(){pl.classList.add("g");document.body.style.overflow="";setTimeout(function(){pl.remove()},800)}
+if(rm){hidePl()}else{document.body.style.overflow="hidden";var t=setInterval(function(){n=Math.min(100,n+Math.ceil(Math.random()*14));pln.textContent=n;if(n>=100){clearInterval(t);setTimeout(hidePl,250)}},110)}
+var cur=$("#cur");
+if(window.matchMedia("(hover:hover)").matches){
+document.addEventListener("mousemove",function(e){cur.style.left=e.clientX+"px";cur.style.top=e.clientY+"px"});
+$$("a,button,.fq-q").forEach(function(el){
+el.addEventListener("mouseenter",function(){cur.style.width="44px";cur.style.height="44px"});
+el.addEventListener("mouseleave",function(){cur.style.width="14px";cur.style.height="14px"});
+});
+}
+var hd=$("#hd"),hdn=$("#hdn");
+window.addEventListener("scroll",function(){hd.classList.toggle("f",window.scrollY>40)},{passive:true});
+$("#hdm").addEventListener("click",function(){hdn.classList.toggle("o")});
+$$("#hdn a").forEach(function(a){a.addEventListener("click",function(){hdn.classList.remove("o")})});
+var mqt=$("#mqt");mqt.innerHTML+=mqt.innerHTML;
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("on");io.unobserve(e.target)}})},{threshold:.12});
+$$(".rv").forEach(function(el){io.observe(el)});
+/* simulador */
+var BRL=function(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0})};
+function sim(){
+var v=parseInt($("#smv").value,10);
+$("#smn").textContent=BRL(v);
+$("#smo").textContent=BRL(Math.round(v*0.107));
+}
+$("#smv").addEventListener("input",sim);sim();
+$$(".fq-i").forEach(function(it){var q=$(".fq-q",it),a=$(".fq-a",it);q.addEventListener("click",function(){var open=it.classList.contains("o");$$(".fq-i.o").forEach(function(o){o.classList.remove("o");$(".fq-a",o).style.maxHeight="0"});if(!open){it.classList.add("o");a.style.maxHeight=a.scrollHeight+"px"}})});
+$("#fm").addEventListener("submit",function(e){e.preventDefault();var msg="Olá! Sou "+$("#fn").value+", faturamento "+$("#fs").value+", CNPJ "+$("#fc").value+". Quero abrir minha conta.";window.open("https://wa.me/5511999990000?text="+encodeURIComponent(msg),"_blank")});
+$("#yr").textContent=new Date().getFullYear();
+})();
+</script>
+<script>
+(function(){
+"use strict";
+var A="#d4af37",WA="5511999990000";
+var KB=[
+{k:["abrir","abertura","conta","cadastro"],a:"Abertura 100% digital em 2 minutos: documento, selfie e CNPJ. Comece pelo botão Abrir conta."},
+{k:["tarifa","taxa","mensalidade","custa","preço"],a:"Sem mensalidade e sem anuidade. Só a antecipação tem taxa de 1,99%, mostrada antes."},
+{k:["rende","rendimento","simulador","juros"],a:"O saldo rende automaticamente. Use o simulador aqui na página para estimar."},
+{k:["ia","robô","sozinha","seguro","confiável"],a:"A IA sugere, a regra valida e você aprova. Nada sai sem humano confirmar."},
+{k:["pix","boleto","ted","cartão","cartao"],a:"Pix ilimitado, boletos grátis, TED ilimitada e cartão sem anuidade."},
+{k:["gerente","humano","atendimento","suporte"],a:"IA no repetitivo, humano no importante. Você escolhe como falar."}
+];
+var FB='Não sei ainda. <a href="https://wa.me/'+WA+'" target="_blank" rel="noopener">Chama no zap</a> que respondemos.';
+var G="Olá! Pergunte sobre conta, tarifas, rendimento ou abertura.";
+var css="#wxb{position:fixed;right:1.2rem;bottom:1.2rem;z-index:150;width:60px;height:60px;border-radius:50%;border:0;background:"+A+";color:#111;font-size:1.5rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.4)}#wxp{position:fixed;right:1.2rem;bottom:5.2rem;z-index:150;width:min(350px,90vw);background:#151515;color:#f5f5f5;border:1px solid rgba(255,255,255,.15);border-radius:18px;overflow:hidden;display:none;flex-direction:column}#wxp.on{display:flex}#wxh{padding:.9rem 1.1rem;font-weight:800;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;background:"+A+";color:#111;display:flex;justify-content:space-between;align-items:center}#wxx{cursor:pointer}#wxm{padding:1rem 1.1rem;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:.6rem;font-size:.92rem;line-height:1.55}#wxm .u{align-self:flex-end;background:rgba(255,255,255,.12);border-radius:12px 12px 3px 12px;padding:.6rem .9rem;max-width:85%}#wxm .b{align-self:flex-start;background:rgba(255,255,255,.07);border-radius:12px 12px 12px 3px;padding:.6rem .9rem;max-width:90%}#wxm a{color:"+A+"}#wxf{display:flex;border-top:1px solid rgba(255,255,255,.12)}#wxi{flex:1;background:none;border:0;color:#f5f5f5;padding:.9rem 1rem;font-size:.95rem;font-family:inherit;outline:none;min-width:0}#wxs{background:none;border:0;color:"+A+";font-size:1.3rem;padding:0 1rem;cursor:pointer}";
+var st=document.createElement("style");st.textContent=css;document.head.appendChild(st);
+var w=document.createElement("div");w.innerHTML='<button id="wxb" aria-label="Perguntar">✦</button><div id="wxp"><div id="wxh"><span>Assistente</span><span id="wxx">×</span></div><div id="wxm"></div><div id="wxf"><input id="wxi" placeholder="Pergunte..." autocomplete="off"><button id="wxs" aria-label="Enviar">→</button></div></div>';document.body.appendChild(w);
+var said=false;
+function say(t,who){var m=document.getElementById("wxm");var d=document.createElement("div");d.className=who;if(who==="b"){d.innerHTML=t}else{d.textContent=t}m.appendChild(d);m.scrollTop=m.scrollHeight}
+function answer(t){var l=t.toLowerCase(),best=null,bs=0;KB.forEach(function(e){var s=0;e.k.forEach(function(k){if(l.indexOf(k)>=0)s+=k.length});if(s>bs){bs=s;best=e}});say(best?best.a:FB,"b")}
+function send(){var i=document.getElementById("wxi");var t=i.value.trim();if(!t)return;say(t,"u");i.value="";setTimeout(function(){answer(t)},350)}
+document.getElementById("wxb").onclick=function(){var p=document.getElementById("wxp");p.classList.toggle("on");if(p.classList.contains("on")&&!said){said=true;say(G,"b")}};
+document.getElementById("wxx").onclick=function(){document.getElementById("wxp").classList.remove("on")};
+document.getElementById("wxs").onclick=send;
+document.getElementById("wxi").addEventListener("keydown",function(e){if(e.key==="Enter")send()});
+})();
+</script>
+</body>
+</html>
