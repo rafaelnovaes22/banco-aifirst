@@ -6,4 +6,6 @@ Site institucional em arquivo único (`index.html`). Conta PJ com caixa intelige
 python -m http.server 8000
 ```
 
-Pendente: WhatsApp real (hoje placeholder `5511999990000`).
+Produção: https://banco-aifirst-production.up.railway.app
+
+Deploy: Railway, projeto `banco-aifirst`, serviço ligado ao repo com Dockerfile nginx na porta 8080.
