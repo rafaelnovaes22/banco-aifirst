@@ -1,0 +1,77 @@
+name: ci
+
+on:
+  push:
+    branches: [chore/ci-cd-break-before-prod, main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build (static + dockerfile lint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Estrutura estatica minima
+        run: |
+          test -f index.html || (echo "FALTA index.html" && exit 1)
+          test -f nginx.conf || (echo "FALTA nginx.conf" && exit 1)
+          test -f Dockerfile || (echo "FALTA Dockerfile" && exit 1)
+          grep -q "<!DOCTYPE html" index.html
+          grep -q "<title>.*</title>" index.html
+          grep -q 'lang="pt-BR"' index.html
+          echo "build OK"
+
+  test-eval-smoke:
+    name: eval smoke (5 casos deterministicos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Smoke 5 casos
+        run: node evals/smoke.mjs
+
+  iso-governance:
+    name: ISO42001 validators (risco, dados, PII, clausula via tsx)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: ISO static check via tsx
+        run: npx -y tsx@4 scripts/iso-static-check.ts
+
+  secret-scan:
+    name: secret scan (bloqueia segredo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Grep segredos (sem rede, deterministico)
+        run: |
+          set -e
+          echo "varrendo rastros de segredo..."
+          ! grep -RInE "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|xox[bpas]-[A-Za-z0-9-]{10,}|sk-(live|test)-[A-Za-z0-9]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)" --exclude-dir=.git --exclude-dir=node_modules --exclude="*.lock" . || (echo "SEGREDO DETECTADO" && exit 1)
+          ! grep -RInE "(?i)(aws_secret|openai_api_key\s*=\s*sk-|AIza[0-9A-Za-z_-]{20,})" --exclude-dir=.git --exclude-dir=node_modules . || (echo "SEGREDO DETECTADO" && exit 1)
+          echo "secret scan OK (nada alem de placeholders wa.me)"
+
+  docker-build:
+    name: docker build (break before prod)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build, test-eval-smoke, iso-governance, secret-scan]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build imagem (sem push)
+        run: docker build -t ci-static:ci .
