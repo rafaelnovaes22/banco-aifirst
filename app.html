@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MVP interativo do Fluxo, banco AI First para empresas. Dados simulados, governança e agentes auditáveis.">
+  <meta name="color-scheme" content="dark">
+  <title>Fluxo OS, Banco AI First</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir para o conteúdo</a>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Navegação principal">
+      <a class="brand" href="index.html" aria-label="Fluxo, página inicial">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span>FLUXO<em>.</em></span>
+      </a>
+      <div class="demo-tag">MVP INTERATIVO</div>
+      <nav class="nav" id="nav">
+        <button class="nav-item active" data-view="cockpit"><span>01</span>Cockpit</button>
+        <button class="nav-item" data-view="agents"><span>02</span>Agentes</button>
+        <button class="nav-item" data-view="audit"><span>03</span>Auditoria</button>
+        <button class="nav-item" data-view="governance"><span>04</span>Governança</button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="status-dot"></span>
+        <div><b>Sistema saudável</b><small>Dados 100% simulados</small></div>
+      </div>
+    </aside>
+
+    <main id="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Abrir menu">Menu</button>
+        <div>
+          <p class="eyebrow">EMPRESA DEMONSTRAÇÃO</p>
+          <b>Novaes Comércio Ltda.</b>
+        </div>
+        <div class="top-actions">
+          <span class="live"><i></i>Agentes ativos</span>
+          <a class="outline-button" href="index.html">Conhecer o projeto</a>
+        </div>
+      </header>
+
+      <section class="view active" id="view-cockpit" aria-labelledby="cockpit-title">
+        <div class="view-head">
+          <div>
+            <p class="eyebrow">VISÃO EXECUTIVA</p>
+            <h1 id="cockpit-title">Seu dinheiro, explicado.</h1>
+          </div>
+          <p class="view-note">Última análise <b>agora</b><br>Próxima revisão em 14 min</p>
+        </div>
+
+        <div class="hero-balance">
+          <div>
+            <p>CAIXA DISPONÍVEL</p>
+            <strong id="balance">R$ 287.340</strong>
+            <span class="trend">+8,4% nos últimos 30 dias</span>
+          </div>
+          <div class="forecast">
+            <span>PREVISÃO EM 30 DIAS</span>
+            <b id="forecast">R$ 341.800</b>
+            <small>Confiança do modelo: 96,8%</small>
+          </div>
+        </div>
+
+        <div class="cockpit-grid">
+          <section class="ai-command" aria-labelledby="command-title">
+            <div class="pulse-line" aria-hidden="true"></div>
+            <p class="eyebrow">COMANDO AI FIRST</p>
+            <h2 id="command-title">Fale o resultado. Os agentes montam o plano.</h2>
+            <form id="command-form">
+              <label class="sr-only" for="command-input">Comando para os agentes</label>
+              <textarea id="command-input" maxlength="240" placeholder="Ex.: proteja meu caixa pelos próximos 60 dias"></textarea>
+              <div class="command-foot">
+                <span id="command-count">0/240</span>
+                <button type="submit">Analisar comando</button>
+              </div>
+            </form>
+            <div class="suggestions" aria-label="Comandos de exemplo">
+              <button data-command="Proteja meu caixa pelos próximos 60 dias">Proteger caixa</button>
+              <button data-command="Procure transações com risco de fraude">Buscar fraude</button>
+              <button data-command="Planeje os impostos deste mês">Planejar impostos</button>
+            </div>
+            <div class="agent-response" id="agent-response" aria-live="polite">
+              <span class="response-label">ORQUESTRADOR</span>
+              <p>Pronto. Descreva o resultado em uma frase.</p>
+            </div>
+          </section>
+
+          <section class="approval-queue" aria-labelledby="approval-title">
+            <div class="section-title">
+              <div><p class="eyebrow">HUMANO NO CONTROLE</p><h2 id="approval-title">Aprovações</h2></div>
+              <span class="count-badge" id="approval-count">1</span>
+            </div>
+            <div id="approval-list"></div>
+          </section>
+        </div>
+
+        <div class="metrics-row">
+          <article><span>CONTAS A RECEBER</span><b>R$ 184.200</b><small>87% previsto no prazo</small></article>
+          <article><span>DESPESAS EM 30 DIAS</span><b>R$ 129.740</b><small>R$ 8.120 abaixo do plano</small></article>
+          <article><span>RISCO OPERACIONAL</span><b class="risk-low">Baixo</b><small>12 de 100 pontos</small></article>
+        </div>
+      </section>
+
+      <section class="view" id="view-agents" aria-labelledby="agents-title">
+        <div class="view-head">
+          <div><p class="eyebrow">OPERAÇÃO AUTÔNOMA</p><h1 id="agents-title">Exército de agentes</h1></div>
+          <p class="view-note">Autonomia limitada por política<br>Movimentação exige aprovação humana</p>
+        </div>
+        <div class="agent-map" id="agent-map"></div>
+        <div class="autonomy-panel">
+          <div>
+            <p class="eyebrow">GATE DE QUALIDADE</p>
+            <h2>95% antes de agir</h2>
+            <p>Se a confiança cai, o agente interrompe a ação e solicita revisão. Nenhum fluxo financeiro usa autonomia irrestrita.</p>
+          </div>
+          <div class="score-ring" aria-label="Acurácia atual de 96,8 por cento"><b>96,8%</b><span>ACURÁCIA</span></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-audit" aria-labelledby="audit-title">
+        <div class="view-head">
+          <div><p class="eyebrow">RASTRO IMUTÁVEL</p><h1 id="audit-title">Auditoria em linguagem humana</h1></div>
+          <button class="outline-button" id="export-audit">Exportar JSON</button>
+        </div>
+        <div class="audit-table" role="region" aria-label="Eventos de auditoria" tabindex="0">
+          <div class="audit-row audit-header"><span>Horário</span><span>Agente</span><span>Ação</span><span>Estado</span></div>
+          <div id="audit-list"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-governance" aria-labelledby="governance-title">
+        <div class="view-head">
+          <div><p class="eyebrow">PRONTO PARA AUDITAR</p><h1 id="governance-title">Governança desde o primeiro comando</h1></div>
+          <p class="view-note">Controles demonstrativos<br>Sem alegação de certificação</p>
+        </div>
+        <div class="governance-grid">
+          <article><span>ISO/IEC 42001</span><h2>Sistema de gestão de IA</h2><p>Inventário de agentes, riscos, responsáveis, evidências e ciclo de revisão.</p><b>8 controles mapeados</b></article>
+          <article><span>ISO/IEC 27001</span><h2>Segurança da informação</h2><p>Menor privilégio, segregação de funções, trilha de acesso e resposta a incidentes.</p><b>6 controles mapeados</b></article>
+          <article><span>LGPD</span><h2>Dados pessoais</h2><p>Finalidade, base legal, minimização, retenção e registro de tratamento.</p><b>5 dados mapeados</b></article>
+          <article><span>HITL</span><h2>Decisão humana</h2><p>Pagamentos, crédito, bloqueios e mudanças de política param na fila de aprovação.</p><b>4 gates obrigatórios</b></article>
+        </div>
+        <div class="disclosure">
+          <b>Escopo real deste MVP</b>
+          <p>Protótipo funcional para avaliação de produto e sociedade. Não é instituição financeira, não abre conta, não recebe depósitos e não movimenta dinheiro. Todos os dados e resultados desta tela são simulados.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="scripts/bank-core.js"></script>
+  <script src="scripts/bank-demo.js"></script>
+</body>
+</html>

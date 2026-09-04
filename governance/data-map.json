@@ -1,1 +1,14 @@
-{"personalData":[{"basis":"consentimento","field":"nome","purpose":"agendamento via WhatsApp","retention":"transitorio no link wa.me"},{"basis":"consentimento","field":"whatsapp","purpose":"canal de resposta do atelier","retention":"conversa WhatsApp"},{"basis":"consentimento","field":"melhor dia","purpose":"agendamento da prova","retention":"transitorio no link wa.me"}],"project":"banco-aifirst"}
+{
+  "project": "banco-aifirst",
+  "scope": "MVP demonstrativo sem persistência ou transmissão de dados",
+  "personalData": [
+    {
+      "field": "texto livre do comando demonstrativo",
+      "purpose": "simular a interpretação do objetivo financeiro no navegador",
+      "basis": "consentimento pelo uso voluntário da demonstração",
+      "retention": "somente memória da aba, sem envio ao servidor"
+    }
+  ],
+  "simulatedData": ["saldo", "transações", "projeções", "empresa", "eventos de auditoria"],
+  "networkProcessing": false
+}

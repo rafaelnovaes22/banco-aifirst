@@ -1,1 +1,46 @@
-{"project":"banco-aifirst","risks":[{"accepted_at":"2026-08-01","accepted_by":"AI Owner","classification":"medio","controls":["index.html","nginx.conf"],"id":"R1","impact":3,"level":6,"probability":2,"title":"Exposicao de numero WhatsApp e dados de agendamento"},{"classification":"baixo","controls":["Dockerfile"],"id":"R2","impact":2,"level":4,"probability":2,"title":"Indisponibilidade do site estatico"},{"classification":"baixo","controls":["index.html"],"id":"R3","impact":2,"level":2,"probability":1,"title":"Queda de conversao por CTA quebrado"}]}
+{
+  "project": "banco-aifirst",
+  "scope": "MVP demonstrativo",
+  "risks": [
+    {
+      "id": "R1",
+      "title": "Usuário interpretar o MVP como instituição financeira em operação",
+      "probability": 2,
+      "impact": 4,
+      "level": 8,
+      "classification": "medio",
+      "controls": ["index.html", "app.html"],
+      "residual": "baixo"
+    },
+    {
+      "id": "R2",
+      "title": "Comando malicioso tentar alterar a política demonstrativa",
+      "probability": 2,
+      "impact": 3,
+      "level": 6,
+      "classification": "medio",
+      "controls": ["scripts/bank-core.js", "tests/bank-core.test.mjs"],
+      "residual": "baixo"
+    },
+    {
+      "id": "R3",
+      "title": "Movimentação financeira sem aprovação humana",
+      "probability": 1,
+      "impact": 5,
+      "level": 5,
+      "classification": "medio",
+      "controls": ["scripts/bank-core.js", "scripts/bank-demo.js"],
+      "residual": "baixo"
+    },
+    {
+      "id": "R4",
+      "title": "Indisponibilidade da demonstração",
+      "probability": 2,
+      "impact": 2,
+      "level": 4,
+      "classification": "baixo",
+      "controls": ["Dockerfile", "nginx.conf"],
+      "residual": "baixo"
+    }
+  ]
+}

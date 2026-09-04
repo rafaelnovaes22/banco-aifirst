@@ -1,11 +1,36 @@
-# Fluxo, banco ai-first
+# Fluxo OS, Banco AI First
 
-Site institucional em arquivo único (`index.html`). Conta PJ com caixa inteligente, simulador de rendimento e assistente de busca.
+MVP demonstrativo de um banco empresarial operado por agentes. A experiência mostra comando em linguagem natural, orquestração, fila de aprovação humana, auditoria exportável e controles de governança.
+
+## Escopo
+
+Este projeto não é uma instituição financeira. Não abre contas, não recebe depósitos e não movimenta dinheiro. Todos os dados são simulados e permanecem no navegador.
+
+## Rodar
 
 ```powershell
 python -m http.server 8000
 ```
 
-Produção: https://banco-aifirst-production.up.railway.app
+Acesse `http://localhost:8000` e abra a demonstração.
 
-Deploy: Railway, projeto `banco-aifirst`, serviço ligado ao repo com Dockerfile nginx na porta 8080.
+## Verificar
+
+```powershell
+node evals/smoke.mjs
+node tests/bank-core.test.mjs
+node scripts/guardrails-check.mjs
+npx -y tsx@4 scripts/iso-static-check.ts
+docker build -t banco-aifirst .
+```
+
+## Arquitetura
+
+- `index.html`: tese e proposta para parceiros.
+- `app.html`: cockpit interativo.
+- `scripts/bank-core.js`: classificação determinística e políticas HITL.
+- `scripts/bank-demo.js`: estado da simulação e trilha de auditoria.
+- `governance/`: mapa de dados e registro de riscos.
+- `nginx.conf`: headers de segurança e endpoint `/health`.
+
+Produção: https://banco-aifirst-production.up.railway.app

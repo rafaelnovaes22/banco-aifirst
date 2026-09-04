@@ -27,7 +27,7 @@ jobs:
           echo "build OK"
 
   test-eval-smoke:
-    name: eval smoke (5 casos deterministicos)
+    name: eval smoke e regras do banco
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -35,8 +35,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Smoke 5 casos
+      - name: Smoke do produto
         run: node evals/smoke.mjs
+      - name: Regras de negócio
+        run: node tests/bank-core.test.mjs
 
   iso-governance:
     name: ISO42001 validators (risco, dados, PII, clausula via tsx)
