@@ -53,4 +53,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: [guardrails, injection, hallucination, cost]
     steps:
-      - run: echo "GATES VERDES: merge liberado, deploy liberado com poll ate SUCCESS"
+      - run: echo 'GATES VERDES - merge liberado, deploy liberado com poll ate SUCCESS'
