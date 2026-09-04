@@ -305,5 +305,7 @@ document.getElementById("wxs").onclick=send;
 document.getElementById("wxi").addEventListener("keydown",function(e){if(e.key==="Enter")send()});
 })();
 </script>
+<script src="guardrails.js"></script>
+<script>(function(){try{if(!window.Guardrails)return;var G=window.Guardrails;var h=document.getElementById("wxh");if(h&&!document.getElementById("wxd")){var s=document.createElement("div");s.id="wxd";s.textContent="Assistente demonstrativo (sem LLM real).";h.parentNode.insertBefore(s,h.nextSibling);}document.addEventListener("input",function(e){if(e.target&&e.target.id==="wxi"&&e.target.value.length>500)e.target.value=e.target.value.slice(0,500);});var f=document.getElementById("fm");if(f)f.addEventListener("submit",function(e){var n=document.getElementById("fn");var r=G.validateForm(n?n.value:"","");if(!r.ok){e.preventDefault();e.stopImmediatePropagation();alert("Verifique os dados e tente de novo.");}},true);console.log(JSON.stringify({ts:new Date().toISOString(),area:"guardrails",event:"frontend_ready",patterns:G.PATTERNS.length}));}catch(e){}})();</script>
 </body>
 </html>
