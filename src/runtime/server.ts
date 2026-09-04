@@ -28,6 +28,7 @@ export async function buildBankServer(
     trustProxy: true,
     bodyLimit: 16_384,
   });
+  registerEmptyFormParser(app);
   app.decorateRequest("bankSession", null);
   app.addHook("onRequest", securityHeaders(config.secureCookie));
   app.addHook("onClose", async () => repository.close());
@@ -36,6 +37,15 @@ export async function buildBankServer(
   registerApiRoutes(app, new BankApplication(repository), config);
   if (config.staticRoot) await registerStaticRoutes(app, config.staticRoot);
   return app;
+}
+
+function registerEmptyFormParser(app: FastifyInstance): void {
+  // PORQUÊ: alguns clientes HTTP marcam POST vazio como form; a rota de sessão não usa o corpo.
+  app.addContentTypeParser(
+    "application/x-www-form-urlencoded",
+    { parseAs: "string" },
+    (_request, body, done) => done(null, body),
+  );
 }
 
 function securityHeaders(secure: boolean) {

@@ -37,6 +37,18 @@ async function startSession(): Promise<{ cookie: string; csrf: string }> {
 }
 
 describe("API persistente do Banco AI First", () => {
+  it("aceita abertura de sessão por clientes que marcam POST vazio como form", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/session",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: "",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().csrfToken).toBeTruthy();
+  });
+
   it("não expõe cockpit sem sessão", async () => {
     const response = await app.inject({
       method: "GET",
