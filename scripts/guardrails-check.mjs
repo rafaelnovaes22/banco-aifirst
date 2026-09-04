@@ -1,12 +1,11 @@
 // PORQUÊ: gates determinísticos precisam medir o cockpit bancário que vai ao ar.
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const core = require(join(root, "scripts", "bank-core.js"));
+await import("./bank-core.js");
+const core = globalThis.BankCore;
 const golden = JSON.parse(readFileSync(join(root, "evals", "golden.json"), "utf8"));
 const requestedGate = process.argv.find((value) => value.startsWith("--gate="))?.split("=")[1];
 const failures = [];
