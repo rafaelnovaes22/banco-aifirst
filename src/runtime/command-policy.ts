@@ -124,7 +124,7 @@ export function detectAction(command: string): CommandAction {
     return "simulate";
   if (/\b(fa[cç]a|pague|transfira|separe|envie|execute|aprove)\b/.test(lower))
     return "execute";
-  if (/\b(prepare|monte|planeje|organize|proteja)\b/.test(lower))
+  if (/\b(prepare|preparar|monte|planeje|organize|proteja)\b/.test(lower))
     return "prepare";
   return "read";
 }
@@ -134,6 +134,7 @@ export function requiresApproval(
   action: CommandAction,
 ): boolean {
   if (action === "change_policy" || action === "block") return true;
+  if (intent === "payment" && action === "prepare") return true;
   return action === "execute" && ["payment", "cash", "tax"].includes(intent);
 }
 
