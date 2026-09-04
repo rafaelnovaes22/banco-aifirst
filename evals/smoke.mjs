@@ -82,6 +82,14 @@ check("a11y", "acessibilidade: lang, alt em imgs, labels, aria", () => {
   return `imgs=${imgs.length} ok`;
 });
 
+// 6 concierge
+check("concierge", "concierge: estima valor, fluxo de abertura com wa.me", () => {
+  if (!html.includes("0.107")) throw new Error("sem fator de estimativa");
+  if (!html.includes("nome_abertura")) throw new Error("sem fluxo de abertura");
+  if (!html.includes("Abrir minha conta</a>")) throw new Error("sem cta de abertura no chat");
+  return "concierge multi-turno ok";
+});
+
 const passed = results.filter((r) => r.pass).length;
 console.log(JSON.stringify({ passed, total: results.length, results }, null, 2));
 

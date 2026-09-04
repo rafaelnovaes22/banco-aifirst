@@ -283,13 +283,21 @@ $("#yr").textContent=new Date().getFullYear();
 "use strict";
 var A="#d4af37",WA="5511999990000";
 var KB=[
-{k:["abrir","abertura","conta","cadastro"],a:"Abertura 100% digital em 2 minutos: documento, selfie e CNPJ. Comece pelo botão Abrir conta."},
+{k:["abrir","abertura","conta","cadastro"],a:"Abertura 100% digital em 2 minutos: documento, selfie e CNPJ. Me fala seu nome que eu deixo a mensagem pronta?",flow:"nome_abertura"},
 {k:["tarifa","taxa","mensalidade","custa","preço"],a:"Sem mensalidade e sem anuidade. Só a antecipação tem taxa de 1,99%, mostrada antes."},
-{k:["rende","rendimento","simulador","juros"],a:"O saldo rende automaticamente. Use o simulador aqui na página para estimar."},
+{k:["rende","rendimento","simulador","juros"],a:"O saldo rende automaticamente. Me fala um valor (tipo 20 mil) que eu estimo aqui pra você."},
 {k:["ia","robô","sozinha","seguro","confiável"],a:"A IA sugere, a regra valida e você aprova. Nada sai sem humano confirmar."},
 {k:["pix","boleto","ted","cartão","cartao"],a:"Pix ilimitado, boletos grátis, TED ilimitada e cartão sem anuidade."},
-{k:["gerente","humano","atendimento","suporte"],a:"IA no repetitivo, humano no importante. Você escolhe como falar."}
+{k:["gerente","humano","atendimento","suporte"],a:"IA no repetitivo, humano no importante. Você escolhe como falar."},
+{k:["antecipa"],a:"Antecipação em 1 clique com taxa única de 1,99% mostrada antes. Sem asterisco."},
+{k:["limite","centro de custo"],a:"Cartão sem anuidade com limite que acompanha seu faturamento e controle por centro de custo."},
+{k:["contador","contabilidade","extrato"],a:"Extrato categorizado e exportação pronta para a contabilidade, todo mês."},
+{k:["folha","pro-labore","prolabore","socio"],a:"Pagamentos, pró-labore e divisão entre sócios com comprovante automático."}
 ];
+var BRL2=function(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0})};
+function estima(t){var m=t.toLowerCase().replace(/\./g,"").match(/(\d+(?:,\d+)?)\s*(mil|k\b|milh)/);if(!m)return null;var n=parseFloat(m[1].replace(",","."))*(m[2].charAt(0)==="m"&&m[2]!=="mil"?"1000000":1000);if(!(n>=1000))return null;return n}
+var pendente=null;
+function fluxo(t){if(pendente==="nome_abertura"&&t.length>=2&&t.length<=40&&!/\d{5,}/.test(t)){pendente=null;var link="https://wa.me/"+WA+"?text="+encodeURIComponent("Olá! Sou "+t+", quero abrir minha conta.");say('Fechado, '+t.split(" ")[0]+'! Toque para concluir no zap: <a href="'+link+'" target="_blank" rel="noopener">Abrir minha conta</a>',"b");return true}return false}
 var FB='Não sei ainda. <a href="https://wa.me/'+WA+'" target="_blank" rel="noopener">Chama no zap</a> que respondemos.';
 var G="Olá! Pergunte sobre conta, tarifas, rendimento ou abertura.";
 var css="#wxb{position:fixed;right:1.2rem;bottom:1.2rem;z-index:150;width:60px;height:60px;border-radius:50%;border:0;background:"+A+";color:#111;font-size:1.5rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 30px rgba(0,0,0,.4)}#wxp{position:fixed;right:1.2rem;bottom:5.2rem;z-index:150;width:min(350px,90vw);background:#151515;color:#f5f5f5;border:1px solid rgba(255,255,255,.15);border-radius:18px;overflow:hidden;display:none;flex-direction:column}#wxp.on{display:flex}#wxh{padding:.9rem 1.1rem;font-weight:800;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;background:"+A+";color:#111;display:flex;justify-content:space-between;align-items:center}#wxx{cursor:pointer}#wxm{padding:1rem 1.1rem;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:.6rem;font-size:.92rem;line-height:1.55}#wxm .u{align-self:flex-end;background:rgba(255,255,255,.12);border-radius:12px 12px 3px 12px;padding:.6rem .9rem;max-width:85%}#wxm .b{align-self:flex-start;background:rgba(255,255,255,.07);border-radius:12px 12px 12px 3px;padding:.6rem .9rem;max-width:90%}#wxm a{color:"+A+"}#wxf{display:flex;border-top:1px solid rgba(255,255,255,.12)}#wxi{flex:1;background:none;border:0;color:#f5f5f5;padding:.9rem 1rem;font-size:.95rem;font-family:inherit;outline:none;min-width:0}#wxs{background:none;border:0;color:"+A+";font-size:1.3rem;padding:0 1rem;cursor:pointer}";
@@ -297,8 +305,8 @@ var st=document.createElement("style");st.textContent=css;document.head.appendCh
 var w=document.createElement("div");w.innerHTML='<button id="wxb" aria-label="Perguntar">✦</button><div id="wxp"><div id="wxh"><span>Assistente</span><span id="wxx">×</span></div><div id="wxm"></div><div id="wxf"><input id="wxi" placeholder="Pergunte..." autocomplete="off"><button id="wxs" aria-label="Enviar">→</button></div></div>';document.body.appendChild(w);
 var said=false;
 function say(t,who){var m=document.getElementById("wxm");var d=document.createElement("div");d.className=who;if(who==="b"){d.innerHTML=t}else{d.textContent=t}m.appendChild(d);m.scrollTop=m.scrollHeight}
-function answer(t){var l=t.toLowerCase(),best=null,bs=0;KB.forEach(function(e){var s=0;e.k.forEach(function(k){if(l.indexOf(k)>=0)s+=k.length});if(s>bs){bs=s;best=e}});say(best?best.a:FB,"b")}
-function send(){var i=document.getElementById("wxi");var t=i.value.trim();if(!t)return;say(t,"u");i.value="";setTimeout(function(){answer(t)},350)}
+function answer(t){var v=estima(t);if(v){say("Com "+BRL2(v)+" parado, estimativa de "+BRL2(Math.round(v*0.107))+" em 12 meses (ilustrativo). Quer abrir e fazer render de verdade?","b");return}var l=t.toLowerCase(),best=null,bs=0;KB.forEach(function(e){var s=0;e.k.forEach(function(k){if(l.indexOf(k)>=0)s+=k.length});if(s>bs){bs=s;best=e}});if(best&&best.flow){pendente=best.flow}say(best?best.a:FB,"b")}
+function send(){var i=document.getElementById("wxi");var t=i.value.trim();if(!t)return;say(t,"u");i.value="";setTimeout(function(){if(!fluxo(t))answer(t)},350)}
 document.getElementById("wxb").onclick=function(){var p=document.getElementById("wxp");p.classList.toggle("on");if(p.classList.contains("on")&&!said){said=true;say(G,"b")}};
 document.getElementById("wxx").onclick=function(){document.getElementById("wxp").classList.remove("on")};
 document.getElementById("wxs").onclick=send;
