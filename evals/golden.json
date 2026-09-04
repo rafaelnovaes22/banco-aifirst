@@ -1,1 +1,22 @@
-[{"input":"qual o preco?","expect":"zap"},{"input":"qual o prazo?","expect":"zap"},{"input":"onde fica?","expect":"zap"},{"input":"como agendo?","expect":"zap"},{"input":"bom dia","expect":"zap"},{"input":"obrigado","expect":"zap"}]
+[
+  { "id": "cash-01", "input": "Projete a reserva de caixa para 60 dias", "intent": "cash", "action": "simulate", "approval": false, "contains": "R$ 42.000" },
+  { "id": "cash-02", "input": "Separe R$ 42 mil para a reserva", "intent": "cash", "action": "execute", "approval": true, "contains": "aguarda sua aprovação" },
+  { "id": "cash-03", "input": "Analise o capital de giro", "intent": "cash", "action": "read", "approval": false, "contains": "60 dias" },
+  { "id": "cash-04", "input": "Mostre o risco de liquidez", "intent": "cash", "action": "read", "approval": false, "contains": "Agente de Caixa" },
+  { "id": "fraud-01", "input": "Procure transações com suspeita de fraude", "intent": "fraud", "action": "read", "approval": false, "contains": "128 lançamentos" },
+  { "id": "fraud-02", "input": "Bloqueie a conta por suspeita de fraude", "intent": "fraud", "action": "block", "approval": true, "contains": "bloqueio preventivo" },
+  { "id": "fraud-03", "input": "Existe algum golpe nas transações?", "intent": "fraud", "action": "read", "approval": false, "contains": "Nenhum bloqueio" },
+  { "id": "fraud-04", "input": "Avalie o risco das movimentações", "intent": "fraud", "action": "read", "approval": false, "contains": "Agente de Risco" },
+  { "id": "tax-01", "input": "Calcule os impostos deste mês", "intent": "tax", "action": "simulate", "approval": false, "contains": "R$ 24.680" },
+  { "id": "tax-02", "input": "Pague o imposto DAS amanhã", "intent": "tax", "action": "execute", "approval": true, "contains": "aguardo sua aprovação" },
+  { "id": "tax-03", "input": "Faça uma projeção fiscal", "intent": "tax", "action": "simulate", "approval": false, "contains": "Agente Fiscal" },
+  { "id": "tax-04", "input": "Confira o DAS do mês", "intent": "tax", "action": "read", "approval": false, "contains": "121%" },
+  { "id": "payment-01", "input": "Liste os pagamentos pendentes", "intent": "payment", "action": "read", "approval": false, "contains": "12 pagamentos" },
+  { "id": "payment-02", "input": "Faça um Pix de R$ 5 mil para o fornecedor", "intent": "payment", "action": "execute", "approval": true, "contains": "saída de dinheiro" },
+  { "id": "payment-03", "input": "Prepare os pagamentos de hoje", "intent": "payment", "action": "prepare", "approval": false, "contains": "Nenhuma saída" },
+  { "id": "payment-04", "input": "Transfira para os prestadores", "intent": "payment", "action": "execute", "approval": true, "contains": "Agente de Pagamentos" },
+  { "id": "audit-01", "input": "Audite as decisões dos agentes", "intent": "audit", "action": "read", "approval": false, "contains": "trilha" },
+  { "id": "audit-02", "input": "Confira as evidências da operação", "intent": "audit", "action": "read", "approval": false, "contains": "pronta para exportação" },
+  { "id": "general-01", "input": "Resuma a saúde financeira da empresa", "intent": "general", "action": "read", "approval": false, "contains": "objetivo, prazo e limite de risco" },
+  { "id": "general-02", "input": "Altere a política de crédito", "intent": "general", "action": "change_policy", "approval": true, "contains": "mudança de política" }
+]
