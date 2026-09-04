@@ -1,5 +1,8 @@
 name: ci
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main, master, concierge-turnos]
@@ -11,16 +14,18 @@ concurrency:
 
 jobs:
   build:
-    name: build (static + dockerfile lint)
+    name: estrutura de produção
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Estrutura estatica minima
+      - name: Estrutura mínima
         run: |
           test -f index.html || (echo "FALTA index.html" && exit 1)
-          test -f nginx.conf || (echo "FALTA nginx.conf" && exit 1)
+          test -f app.html || (echo "FALTA app.html" && exit 1)
           test -f Dockerfile || (echo "FALTA Dockerfile" && exit 1)
+          test -f package-lock.json || (echo "FALTA package-lock.json" && exit 1)
+          test -f src/main.ts || (echo "FALTA src/main.ts" && exit 1)
           grep -q "<!DOCTYPE html" index.html
           grep -q "<title>.*</title>" index.html
           grep -q 'lang="pt-BR"' index.html
@@ -35,6 +40,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
       - name: Smoke do produto
         run: node evals/smoke.mjs
       - name: Regras de negócio
@@ -63,16 +71,52 @@ jobs:
       - name: Grep segredos (sem rede, deterministico)
         run: |
           set -e
+          scan_secrets() {
+            pattern="$1"
+            shift
+            set +e
+            grep -RIlE "$@" --exclude-dir=.git --exclude-dir=node_modules --exclude="*.lock" -- "$pattern" . > /tmp/secret-scan-files
+            status=$?
+            set -e
+            if [ "$status" -eq 1 ]; then
+              return 0
+            fi
+            if [ "$status" -ne 0 ]; then
+              echo "FALHA NO SCANNER: grep terminou com status $status"
+              return "$status"
+            fi
+            echo "SEGREDO DETECTADO NOS ARQUIVOS:"
+            sed 's/^/  - /' /tmp/secret-scan-files
+            return 1
+          }
           echo "varrendo rastros de segredo..."
-          ! grep -RInE "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|xox[bpas]-[A-Za-z0-9-]{10,}|sk-(live|test)-[A-Za-z0-9]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)" --exclude-dir=.git --exclude-dir=node_modules --exclude="*.lock" . || (echo "SEGREDO DETECTADO" && exit 1)
-          ! grep -RInE "(?i)(aws_secret|openai_api_key\s*=\s*sk-|AIza[0-9A-Za-z_-]{20,})" --exclude-dir=.git --exclude-dir=node_modules . || (echo "SEGREDO DETECTADO" && exit 1)
+          scan_secrets "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|xox[bpas]-[A-Za-z0-9-]{10,}|sk-(live|test)-[A-Za-z0-9]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)"
+          # PORQUÊ: classes de um caractere evitam o scanner casar com a própria regra.
+          scan_secrets "(aws_[s]ecret|openai_api_[k]ey\s*=\s*sk-|AIza[0-9A-Za-z_-]{20,})" -i
           echo "secret scan OK"
+
+  application-security:
+    name: aplicacao (verify + audit producao)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Instalar dependencias reproduziveis
+        run: npm ci
+      - name: Gate unico da aplicacao
+        run: npm run verify
+      - name: Auditar dependencias de producao
+        run: npm audit --omit=dev --audit-level=high
 
   docker-build:
     name: docker build (break before prod)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build, test-eval-smoke, iso-governance, secret-scan]
+    needs: [build, test-eval-smoke, iso-governance, secret-scan, application-security]
     steps:
       - uses: actions/checkout@v4
       - name: Build imagem (sem push)

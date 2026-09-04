@@ -9,6 +9,8 @@ const command: PixOutCommand = {
   idempotencyKey: "idem-asaas-1",
   orgId: "org-1",
   amountInCents: 12_300,
+  pixAddressKey: "f825a844-7a31-4b36-91b1-2e1ffed60a6e",
+  pixAddressKeyType: "EVP",
 };
 
 type HttpResponse = {
@@ -17,20 +19,29 @@ type HttpResponse = {
   json: () => Promise<unknown>;
 };
 
+type HttpRequestInit = {
+  readonly method: string;
+  readonly headers: Record<string, string>;
+  readonly body?: string;
+};
+
 describe("AsaasBaasProvider", () => {
   it("mapeia criação confirmada em Receipt correto", async () => {
+    let requestedUrl = "";
+    let requestedInit: HttpRequestInit | undefined;
     const fetcher = async (
-      _url: string,
-      init?: Record<string, unknown>,
+      url: string,
+      init?: HttpRequestInit,
     ): Promise<HttpResponse> => {
-      expect(init?.method).toBe("POST");
+      requestedUrl = url;
+      requestedInit = init;
       return {
         ok: true,
         status: 200,
         json: async () => ({
           id: "asaas-123",
-          status: "CONFIRMED",
-          amountInCents: 12_300,
+          status: "DONE",
+          value: 123,
         }),
       };
     };
@@ -46,6 +57,35 @@ describe("AsaasBaasProvider", () => {
     }
     expect(receipt.baasRef).toBe("asaas-123");
     expect(receipt.amountInCents).toBe(12_300);
+    expect(requestedUrl).toBe("https://api.asaas.test/v3/transfers");
+    expect(requestedInit?.method).toBe("POST");
+    expect(requestedInit?.headers).toMatchObject({
+      access_token: "k",
+      "User-Agent": "BancoAIFirst/0.1.0 (Node.js; sandbox)",
+      "content-type": "application/json",
+    });
+    expect(requestedInit?.headers).not.toHaveProperty("Authorization");
+    expect(JSON.parse(requestedInit?.body ?? "{}")).toEqual({
+      value: 123,
+      pixAddressKey: command.pixAddressKey,
+      pixAddressKeyType: command.pixAddressKeyType,
+      externalReference: command.idempotencyKey,
+    });
+  });
+
+  it("usa a API Sandbox oficial quando baseUrl não é informada", async () => {
+    let requestedUrl = "";
+    const fetcher = async (url: string): Promise<HttpResponse> => {
+      requestedUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ id: "asaas-sandbox", status: "DONE", value: 123 }),
+      };
+    };
+    const provider = new AsaasBaasProvider("k", undefined, fetcher);
+    await provider.sendPixOut(command);
+    expect(requestedUrl).toBe("https://api-sandbox.asaas.com/v3/transfers");
   });
 
   it("status de criação assíncrono vira erro e mantém fail-closed no fluxo", async () => {
@@ -55,7 +95,7 @@ describe("AsaasBaasProvider", () => {
       json: async () => ({
         id: "asaas-124",
         status: "PENDING",
-        amountInCents: 12_300,
+        value: 123,
       }),
     });
     const provider = new AsaasBaasProvider(
@@ -64,31 +104,44 @@ describe("AsaasBaasProvider", () => {
       fetcher,
     );
     await expect(provider.sendPixOut(command)).rejects.toThrow(
-      /status assíncrono/,
+      /asaas-124.*PENDING/,
     );
   });
 
   it("fetchPixOutStatus trata rejeição do Asaas como FAILED", async () => {
-    const fetcher = async (): Promise<HttpResponse> => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        id: "asaas-125",
-        status: "FAILED",
-        reason: "blocked",
-      }),
-    });
+    let requestedUrl = "";
+    let requestedInit: HttpRequestInit | undefined;
+    const fetcher = async (
+      url: string,
+      init?: HttpRequestInit,
+    ): Promise<HttpResponse> => {
+      requestedUrl = url;
+      requestedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: "asaas-125",
+          status: "FAILED",
+          value: 123,
+          failReason: "blocked",
+        }),
+      };
+    };
     const provider = new AsaasBaasProvider(
       "k",
       "https://api.asaas.test/v3",
       fetcher,
     );
-    const receipt = await provider.fetchPixOutStatus("idem-1");
+    const receipt = await provider.fetchPixOutStatus("asaas-125");
     expect(receipt).not.toBeNull();
     if (receipt === null || receipt.status !== "REJECTED") {
       throw new Error("esperado RECEIPT rejeitado");
     }
     expect(receipt.reason).toContain("blocked");
+    expect(requestedUrl).toBe("https://api.asaas.test/v3/transfers/asaas-125");
+    expect(requestedInit?.method).toBe("GET");
+    expect(requestedInit?.body).toBeUndefined();
   });
 });
 

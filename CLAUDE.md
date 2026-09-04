@@ -23,6 +23,8 @@ Setup inicial: `bin/setup.ps1` no Windows, `bin/setup.sh` no Unix. Idempotente, 
 - Funções de 4 a 20 linhas, arquivos até 500 (alvo 200 a 300). Comentário `PORQUÊ` explica decisão, nunca o óbvio.
 - Dinheiro só move em `pix-out-executor.ts` via `BaasProvider`. LLM nunca executa, só sugere rascunho.
 - Logs com `app.log.info({campo}, 'msg')`. Proibido `console.log` fora de `src/demo/`.
-- Produção exige `DATABASE_URL` e `SESSION_SECRET`; sem eles o processo falha fechado.
+- Produção exige `DATABASE_URL` e `APP_ORIGIN`; sem eles o processo falha fechado.
+- O runtime público registra somente `/api/v1`; as rotas legadas ficam fora da composição de produção.
+- Tokens de sessão e CSRF são opacos. Somente hashes SHA-256 podem ser persistidos.
 - Segredo de webhook vem de env (`BAAS_WEBHOOK_SECRET`). Seed só com `SEED_DEMO=true`.
 - Diagnostique antes de alterar. Não refatore lógica de negócio em tarefa de infra.

@@ -3,56 +3,25 @@
 
 import { z } from "zod";
 
-const DEFAULT_ASAAS_BASE_URL = "https://api.asaas.com/api/v3";
-const CONFIRMED_ASAAS_STATUSES = new Set([
-  "CONFIRMED",
-  "PAYMENT_CONFIRMED",
-  "PAYMENT_RECEIVED",
-  "RECEIVED",
-  "PAID",
-]);
+// PORQUÊ: integração externa nasce no Sandbox. Produção só entra quando o
+// chamador fornece explicitamente outra base URL.
+// Fontes: https://docs.asaas.com/docs/authentication
+// https://docs.asaas.com/reference/transfer-to-another-institution-account-or-pix-key
+// https://docs.asaas.com/reference/retrieve-a-single-transfer
+const DEFAULT_ASAAS_BASE_URL = "https://api-sandbox.asaas.com/v3";
+const DEFAULT_ASAAS_USER_AGENT = "BancoAIFirst/0.1.0 (Node.js; sandbox)";
+const CONFIRMED_ASAAS_STATUSES = new Set(["DONE"]);
+const REJECTED_ASAAS_STATUSES = new Set(["CANCELLED", "FAILED"]);
+const PENDING_ASAAS_STATUSES = new Set(["PENDING", "BANK_PROCESSING"]);
 
-const REJECTED_ASAAS_STATUSES = new Set([
-  "FAILED",
-  "CANCELED",
-  "CANCELLED",
-  "REJECTED",
-  "BLOCKED",
-  "OVERDUE",
-]);
-
-const PENDING_ASAAS_STATUSES = new Set([
-  "PENDING",
-  "PROCESSING",
-  "AWAITING_PAYMENT",
-  "SCHEDULED",
-]);
-
-const toCents = (value: unknown): number => {
-  if (typeof value === "number") return value;
-  if (typeof value === "string") {
-    return Math.max(
-      0,
-      Math.round(Number.parseFloat(value.replace(",", ".")) * 100),
-    );
-  }
-  throw new Error("valor monetário inválido no contrato Asaas");
-};
-
-const AsaasCreateResponseSchema = z.object({
+const AsaasTransferResponseSchema = z.object({
   id: z.string().min(1),
   status: z.string().min(1),
   value: z.union([z.number(), z.string()]).optional(),
-  amountInCents: z.number().int().nonnegative().optional(),
+  failReason: z.string().nullable().optional(),
 });
 
-const AsaasGetResponseSchema = z.object({
-  id: z.string().min(1),
-  status: z.string().min(1),
-  value: z.union([z.number(), z.string()]).optional(),
-  amountInCents: z.number().int().nonnegative().optional(),
-  reason: z.string().optional(),
-});
+type AsaasTransferResponse = z.infer<typeof AsaasTransferResponseSchema>;
 
 const isAsaasRejectedStatus = (status: string): boolean =>
   REJECTED_ASAAS_STATUSES.has(status);
@@ -78,7 +47,11 @@ export interface PixOutCommand {
   readonly idempotencyKey: string;
   readonly orgId: string;
   readonly amountInCents: number;
+  readonly pixAddressKey?: string;
+  readonly pixAddressKeyType?: PixAddressKeyType;
 }
+
+export type PixAddressKeyType = "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP";
 
 export type ProviderPixOutReceipt =
   | {
@@ -91,7 +64,7 @@ export type ProviderPixOutReceipt =
 export interface BaasProvider {
   sendPixOut(command: PixOutCommand): Promise<ProviderPixOutReceipt>;
   fetchPixOutStatus(
-    idempotencyKey: string,
+    providerReference: string,
   ): Promise<ProviderPixOutReceipt | null>;
 }
 
@@ -135,76 +108,51 @@ export class SandboxBaasProvider implements BaasProvider {
 export class AsaasBaasProvider implements BaasProvider {
   private readonly baseUrl: string;
   private readonly apiKey: string;
+  private readonly userAgent: string;
 
   constructor(
     apiKey: string,
     baseUrl: string = DEFAULT_ASAAS_BASE_URL,
     private readonly httpClient: AsaasHttpClient = fetchJson,
+    userAgent: string = DEFAULT_ASAAS_USER_AGENT,
   ) {
     if (!apiKey.trim()) throw new Error("ASAAS_API_KEY não pode ficar vazio");
     if (!baseUrl.trim()) throw new Error("ASAAS_BASE_URL não pode ficar vazio");
+    if (!userAgent.trim())
+      throw new Error("ASAAS_USER_AGENT não pode ficar vazio");
     this.apiKey = apiKey;
-    this.baseUrl = baseUrl.replace(/\/$/, "");
+    this.baseUrl = baseUrl.replace(/\/+$/, "");
+    this.userAgent = userAgent;
   }
 
   async sendPixOut(command: PixOutCommand): Promise<ProviderPixOutReceipt> {
-    const response = await this.request<
-      z.infer<typeof AsaasCreateResponseSchema>
-    >("/payments", "POST", {
-      value: command.amountInCents / 100,
-      externalReference: command.idempotencyKey,
-      idempotencyKey: command.idempotencyKey,
-      orgId: command.orgId,
-    });
-    const parsed = AsaasCreateResponseSchema.safeParse(response);
-    if (!parsed.success)
-      throw new Error("contrato de criação do Asaas inválido");
-    const status = parsed.data.status.toUpperCase();
-    if (isAsaasRejectedStatus(status)) {
-      return {
-        status: "REJECTED",
-        reason: `asaas status ${parsed.data.status}`,
-      };
-    }
-    if (!isAsaasConfirmedStatus(status)) {
-      if (isAsaasPendingStatus(status)) {
-        throw new Error(
-          `status assíncrono do Asaas para criação: ${parsed.data.status}`,
-        );
-      }
-      throw new Error(
-        `status de criação do Asaas desconhecido: ${parsed.data.status}`,
-      );
-    }
-    const amountInCents = extractAmountFromAsaas(parsed.data);
-    return { status: "CONFIRMED", baasRef: parsed.data.id, amountInCents };
+    const response = await this.request<unknown>(
+      "/transfers",
+      "POST",
+      buildPixTransferPayload(command),
+    );
+    const transfer = parseAsaasTransferResponse(
+      response,
+      "criação de transferência",
+    );
+    return mapCreatedTransfer(transfer);
   }
 
   async fetchPixOutStatus(
-    idempotencyKey: string,
+    providerTransferId: string,
   ): Promise<ProviderPixOutReceipt | null> {
-    const response = await this.request<z.infer<typeof AsaasGetResponseSchema>>(
-      `/payments/${encodeURIComponent(idempotencyKey)}`,
+    if (!providerTransferId.trim()) {
+      throw new Error("providerTransferId não pode ficar vazio");
+    }
+    const response = await this.request<unknown>(
+      `/transfers/${encodeURIComponent(providerTransferId)}`,
       "GET",
     );
-    const parsed = AsaasGetResponseSchema.safeParse(response);
-    if (!parsed.success)
-      throw new Error("contrato de consulta do Asaas inválido");
-    const status = parsed.data.status.toUpperCase();
-    if (isAsaasRejectedStatus(status)) {
-      return {
-        status: "REJECTED",
-        reason: parsed.data.reason ?? `asaas status ${parsed.data.status}`,
-      };
-    }
-    if (isAsaasPendingStatus(status)) return null;
-    if (!isAsaasConfirmedStatus(status)) {
-      throw new Error(
-        `status de consulta do Asaas desconhecido: ${parsed.data.status}`,
-      );
-    }
-    const amountInCents = extractAmountFromAsaas(parsed.data);
-    return { status: "CONFIRMED", baasRef: parsed.data.id, amountInCents };
+    const transfer = parseAsaasTransferResponse(
+      response,
+      "consulta de transferência",
+    );
+    return mapFetchedTransfer(transfer);
   }
 
   private async request<T>(
@@ -215,24 +163,116 @@ export class AsaasBaasProvider implements BaasProvider {
     const response = await this.httpClient(`${this.baseUrl}${path}`, {
       method,
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        access_token: this.apiKey,
+        "User-Agent": this.userAgent,
         "content-type": "application/json",
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!response.ok) {
-      throw new Error(`Asaas HTTP ${response.status}`);
+      throw new Error(
+        `Asaas ${method} ${path} retornou HTTP ${response.status}`,
+      );
     }
     return response.json() as Promise<T>;
   }
 }
 
-function extractAmountFromAsaas(payload: {
-  amountInCents?: number;
-  value?: string | number;
-}): number {
-  if (payload.amountInCents !== undefined) return payload.amountInCents;
-  return toCents(payload.value);
+function buildPixTransferPayload(
+  command: PixOutCommand,
+): Record<string, unknown> {
+  if (!Number.isInteger(command.amountInCents) || command.amountInCents <= 0) {
+    throw new Error(
+      `amountInCents inválido: ${command.amountInCents}, esperado inteiro > 0`,
+    );
+  }
+  if (!command.pixAddressKey?.trim() || !command.pixAddressKeyType) {
+    throw new Error(
+      `Pix Asaas ${command.idempotencyKey} sem pixAddressKey ou pixAddressKeyType`,
+    );
+  }
+  return {
+    value: command.amountInCents / 100,
+    pixAddressKey: command.pixAddressKey,
+    pixAddressKeyType: command.pixAddressKeyType,
+    externalReference: command.idempotencyKey,
+  };
+}
+
+function parseAsaasTransferResponse(
+  raw: unknown,
+  operation: string,
+): AsaasTransferResponse {
+  const parsed = AsaasTransferResponseSchema.safeParse(raw);
+  if (parsed.success) return parsed.data;
+  const issue = parsed.error.issues[0]?.message ?? "schema desconhecido";
+  throw new Error(`contrato Asaas inválido em ${operation}: ${issue}`);
+}
+
+function mapCreatedTransfer(
+  transfer: AsaasTransferResponse,
+): ProviderPixOutReceipt {
+  const status = transfer.status.toUpperCase();
+  if (isAsaasRejectedStatus(status)) return rejectedTransfer(transfer);
+  if (isAsaasPendingStatus(status)) {
+    throw new Error(
+      `transferência Asaas ${transfer.id} com status assíncrono ${status}`,
+    );
+  }
+  if (!isAsaasConfirmedStatus(status)) {
+    throw new Error(
+      `transferência Asaas ${transfer.id} com status desconhecido ${status}`,
+    );
+  }
+  return confirmedTransfer(transfer);
+}
+
+function mapFetchedTransfer(
+  transfer: AsaasTransferResponse,
+): ProviderPixOutReceipt | null {
+  const status = transfer.status.toUpperCase();
+  if (isAsaasPendingStatus(status)) return null;
+  if (isAsaasRejectedStatus(status)) return rejectedTransfer(transfer);
+  if (!isAsaasConfirmedStatus(status)) {
+    throw new Error(
+      `transferência Asaas ${transfer.id} com status desconhecido ${status}`,
+    );
+  }
+  return confirmedTransfer(transfer);
+}
+
+function rejectedTransfer(
+  transfer: AsaasTransferResponse,
+): ProviderPixOutReceipt {
+  return {
+    status: "REJECTED",
+    reason: transfer.failReason ?? `asaas status ${transfer.status}`,
+  };
+}
+
+function confirmedTransfer(
+  transfer: AsaasTransferResponse,
+): ProviderPixOutReceipt {
+  return {
+    status: "CONFIRMED",
+    baasRef: transfer.id,
+    amountInCents: toCents(transfer.value),
+  };
+}
+
+function toCents(value: unknown): number {
+  const valueInReais =
+    typeof value === "number"
+      ? value
+      : Number.parseFloat(
+          typeof value === "string" ? value.replace(",", ".") : "NaN",
+        );
+  if (!Number.isFinite(valueInReais) || valueInReais < 0) {
+    throw new Error(
+      `valor monetário inválido no contrato Asaas: ${String(value)}`,
+    );
+  }
+  return Math.round(valueInReais * 100);
 }
 
 async function fetchJson(
