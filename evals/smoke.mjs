@@ -7,6 +7,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const landing = readFileSync(join(root, "index.html"), "utf8");
 const app = readFileSync(join(root, "app.html"), "utf8");
 const nginx = readFileSync(join(root, "nginx.conf"), "utf8");
+const dockerfile = readFileSync(join(root, "Dockerfile"), "utf8");
 const results = [];
 
 function check(id, assertion) {
@@ -58,6 +59,13 @@ check("safety", () => {
   expect(app.includes("não movimenta dinheiro"), "escopo do MVP ausente");
   expect(nginx.includes("Content-Security-Policy"), "CSP ausente");
   expect(nginx.includes("X-Frame-Options"), "proteção de frame ausente");
+});
+
+check("deployment", () => {
+  expect(nginx.includes("location = /health"), "healthcheck ausente");
+  expect(dockerfile.includes("COPY app.html"), "cockpit fora da imagem");
+  expect(dockerfile.includes("COPY scripts/"), "regras fora da imagem");
+  expect(dockerfile.includes("COPY icon.svg"), "favicon fora da imagem");
 });
 
 const failed = results.filter((result) => !result.pass);

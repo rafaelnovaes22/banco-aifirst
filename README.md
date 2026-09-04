@@ -20,7 +20,7 @@ Acesse `http://localhost:8000` e abra a demonstração.
 node evals/smoke.mjs
 node tests/bank-core.test.mjs
 node scripts/guardrails-check.mjs
-npx -y tsx@4 scripts/iso-static-check.ts
+node scripts/iso-static-check.ts
 docker build -t banco-aifirst .
 ```
 
@@ -30,7 +30,10 @@ docker build -t banco-aifirst .
 - `app.html`: cockpit interativo.
 - `scripts/bank-core.js`: classificação determinística e políticas HITL.
 - `scripts/bank-demo.js`: estado da simulação e trilha de auditoria.
+- `evals/golden.json`: 20 cenários de intenção, ação e aprovação.
 - `governance/`: mapa de dados e registro de riscos.
 - `nginx.conf`: headers de segurança e endpoint `/health`.
+
+O gate atual exige pelo menos 95% de acerto. A suíte cobre consultas, simulações, execuções sensíveis e 38 ataques de prompt injection em português e inglês.
 
 Produção: https://banco-aifirst-production.up.railway.app

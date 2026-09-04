@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [chore/ci-cd-break-before-prod, main, master]
+    branches: [main, master, concierge-turnos]
   pull_request:
 
 concurrency:
@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: "22"
       - name: ISO static check via tsx
-        run: npx -y tsx@4 scripts/iso-static-check.ts
+        run: node scripts/iso-static-check.ts
 
   secret-scan:
     name: secret scan (bloqueia segredo)
@@ -66,7 +66,7 @@ jobs:
           echo "varrendo rastros de segredo..."
           ! grep -RInE "(AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|xox[bpas]-[A-Za-z0-9-]{10,}|sk-(live|test)-[A-Za-z0-9]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)" --exclude-dir=.git --exclude-dir=node_modules --exclude="*.lock" . || (echo "SEGREDO DETECTADO" && exit 1)
           ! grep -RInE "(?i)(aws_secret|openai_api_key\s*=\s*sk-|AIza[0-9A-Za-z_-]{20,})" --exclude-dir=.git --exclude-dir=node_modules . || (echo "SEGREDO DETECTADO" && exit 1)
-          echo "secret scan OK (nada alem de placeholders wa.me)"
+          echo "secret scan OK"
 
   docker-build:
     name: docker build (break before prod)

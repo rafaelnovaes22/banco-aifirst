@@ -1,7 +1,7 @@
 name: guardrails-stop-94-25
 on:
   push:
-    branches: [chore/guardrails-stop-94-25]
+    branches: [main, master, concierge-turnos]
   pull_request:
     branches: [main, master, chore/ci-cd-break-before-prod, chore/guardrails-stop-94-25]
 concurrency:
@@ -17,9 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node scripts/guardrails-check.mjs
+      - run: node scripts/guardrails-check.mjs --gate=guardrails
   injection:
-    name: injection 30+ PT-BR/EN bloqueio deterministico
+    name: injection 30+ PT-BR/EN bloqueio determinístico
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -27,9 +27,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node scripts/guardrails-check.mjs
-  hallucination:
-    name: hallucination golden >94%
+      - run: node scripts/guardrails-check.mjs --gate=injection
+  quality:
+    name: qualidade golden >=95%
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node scripts/guardrails-check.mjs
+      - run: node scripts/guardrails-check.mjs --gate=quality
   cost:
     name: cost SLM <25%
     runs-on: ubuntu-latest
@@ -47,10 +47,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node scripts/guardrails-check.mjs
+      - run: node scripts/guardrails-check.mjs --gate=cost
   break-gate:
     name: break before prod (merge/deploy so se verde)
     runs-on: ubuntu-latest
-    needs: [guardrails, injection, hallucination, cost]
+    needs: [guardrails, injection, quality, cost]
     steps:
       - run: echo 'GATES VERDES - merge liberado, deploy liberado com poll ate SUCCESS'

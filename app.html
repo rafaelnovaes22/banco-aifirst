@@ -6,6 +6,7 @@
   <meta name="description" content="MVP interativo do Fluxo, banco AI First para empresas. Dados simulados, governança e agentes auditáveis.">
   <meta name="color-scheme" content="dark">
   <title>Fluxo OS, Banco AI First</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -34,7 +35,7 @@
 
     <main id="main">
       <header class="topbar">
-        <button class="mobile-menu" id="mobile-menu" aria-label="Abrir menu">Menu</button>
+        <button class="mobile-menu" id="mobile-menu" aria-label="Abrir menu" aria-expanded="false">Menu</button>
         <div>
           <p class="eyebrow">EMPRESA DEMONSTRAÇÃO</p>
           <b>Novaes Comércio Ltda.</b>
@@ -63,7 +64,7 @@
           <div class="forecast">
             <span>PREVISÃO EM 30 DIAS</span>
             <b id="forecast">R$ 341.800</b>
-            <small>Confiança do modelo: 96,8%</small>
+            <small>Cenário demonstrativo, sem predição real</small>
           </div>
         </div>
 
@@ -119,13 +120,13 @@
             <h2>95% antes de agir</h2>
             <p>Se a confiança cai, o agente interrompe a ação e solicita revisão. Nenhum fluxo financeiro usa autonomia irrestrita.</p>
           </div>
-          <div class="score-ring" aria-label="Acurácia atual de 96,8 por cento"><b>96,8%</b><span>ACURÁCIA</span></div>
+          <div class="score-ring" aria-label="Cenários de avaliação aprovados em 100 por cento"><b>100%</b><span>EVALS</span></div>
         </div>
       </section>
 
       <section class="view" id="view-audit" aria-labelledby="audit-title">
         <div class="view-head">
-          <div><p class="eyebrow">RASTRO IMUTÁVEL</p><h1 id="audit-title">Auditoria em linguagem humana</h1></div>
+          <div><p class="eyebrow">RASTRO AUDITÁVEL</p><h1 id="audit-title">Auditoria em linguagem humana</h1></div>
           <button class="outline-button" id="export-audit">Exportar JSON</button>
         </div>
         <div class="audit-table" role="region" aria-label="Eventos de auditoria" tabindex="0">

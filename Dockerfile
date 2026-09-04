@@ -3,6 +3,7 @@
 FROM nginx:1.27-alpine
 COPY index.html /usr/share/nginx/html/index.html
 COPY app.html /usr/share/nginx/html/app.html
+COPY icon.svg /usr/share/nginx/html/icon.svg
 COPY guardrails.js /usr/share/nginx/html/guardrails.js
 COPY assets/ /usr/share/nginx/html/assets/
 COPY styles/ /usr/share/nginx/html/styles/

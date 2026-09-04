@@ -54,12 +54,24 @@
 
   function renderAudit() {
     document.getElementById("audit-list").innerHTML = state.audit.map(function (item) {
-      return '<div class="audit-row"><span>' + escapeHtml(item.time) + '</span><span>' + escapeHtml(item.agent) + '</span><span>' + escapeHtml(item.action) + '</span><span class="audit-status">' + escapeHtml(item.status) + '</span></div>';
+      return '<div class="audit-row"><span>' + escapeHtml(item.time) + '</span><span>' + escapeHtml(item.agent) + '</span><span>' + escapeHtml(item.action) + '</span><span class="audit-status ' + statusClass(item.status) + '">' + escapeHtml(item.status) + '</span></div>';
     }).join("");
   }
 
+  function statusClass(status) {
+    if (status === "AGUARDANDO") return "awaiting";
+    if (status === "BLOQUEADO" || status === "RECUSADO") return "blocked";
+    return "completed";
+  }
+
+  function logAudit(item) {
+    console.info(JSON.stringify({ timestamp: new Date().toISOString(), area: "audit", agent: item.agent, action: item.action, status: item.status }));
+  }
+
   function addAudit(agent, action, status) {
-    state.audit.unshift(auditEvent(currentTime(), agent, action, status));
+    var item = auditEvent(currentTime(), agent, action, status);
+    state.audit.unshift(item);
+    logAudit(item);
     renderAudit();
   }
 
@@ -72,9 +84,14 @@
 
   function switchView(viewName) {
     document.querySelectorAll(".view").forEach(function (view) { view.classList.remove("active"); });
-    document.querySelectorAll(".nav-item").forEach(function (item) { item.classList.toggle("active", item.dataset.view === viewName); });
+    document.querySelectorAll(".nav-item").forEach(function (item) {
+      var active = item.dataset.view === viewName;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-current", active ? "page" : "false");
+    });
     document.getElementById("view-" + viewName).classList.add("active");
     document.querySelector(".sidebar").classList.remove("open");
+    document.getElementById("mobile-menu").setAttribute("aria-expanded", "false");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -86,7 +103,7 @@
       addAudit("Guardrail", "Interrompeu comando fora da política", "BLOQUEADO");
       return;
     }
-    var plan = core.buildPlan(result.intent);
+    var plan = core.buildPlan(result.intent, result.action);
     response.innerHTML = '<span class="response-label">' + escapeHtml(plan.agent.toLocaleUpperCase("pt-BR")) + '</span><p>' + escapeHtml(plan.message) + '</p>';
     addAudit(plan.agent, "Analisou comando: " + result.command.slice(0, 70), plan.approval ? "AGUARDANDO" : "CONCLUÍDO");
     if (plan.approval) state.approvals.unshift(core.createApproval(result.intent, Date.now()));
@@ -96,6 +113,7 @@
   function decideApproval(card, decision) {
     var id = card.dataset.id;
     var item = state.approvals.find(function (candidate) { return candidate.id === id; });
+    if (!item) return;
     state.approvals = state.approvals.filter(function (candidate) { return candidate.id !== id; });
     addAudit("Humano responsável", (decision === "approved" ? "Aprovou: " : "Recusou: ") + item.title, decision === "approved" ? "APROVADO" : "RECUSADO");
     renderApprovals();
@@ -112,12 +130,25 @@
     showToast("Trilha de auditoria exportada.");
   }
 
+  function setCommand(command) {
+    var input = document.getElementById("command-input");
+    input.value = command;
+    document.getElementById("command-count").textContent = command.length + "/" + core.MAX_COMMAND_LENGTH;
+  }
+
+  function toggleMobileMenu() {
+    var sidebar = document.querySelector(".sidebar");
+    var open = !sidebar.classList.contains("open");
+    sidebar.classList.toggle("open", open);
+    document.getElementById("mobile-menu").setAttribute("aria-expanded", String(open));
+  }
+
   function bindEvents() {
     document.querySelectorAll(".nav-item").forEach(function (item) { item.addEventListener("click", function () { switchView(item.dataset.view); }); });
-    document.getElementById("mobile-menu").addEventListener("click", function () { document.querySelector(".sidebar").classList.toggle("open"); });
+    document.getElementById("mobile-menu").addEventListener("click", toggleMobileMenu);
     document.getElementById("command-input").addEventListener("input", function (event) { document.getElementById("command-count").textContent = event.target.value.length + "/" + core.MAX_COMMAND_LENGTH; });
     document.getElementById("command-form").addEventListener("submit", function (event) { event.preventDefault(); submitCommand(document.getElementById("command-input").value); });
-    document.querySelectorAll("[data-command]").forEach(function (button) { button.addEventListener("click", function () { document.getElementById("command-input").value = button.dataset.command; submitCommand(button.dataset.command); }); });
+    document.querySelectorAll("[data-command]").forEach(function (button) { button.addEventListener("click", function () { setCommand(button.dataset.command); submitCommand(button.dataset.command); }); });
     document.getElementById("approval-list").addEventListener("click", function (event) { var button = event.target.closest("[data-decision]"); if (button) decideApproval(button.closest(".approval-card"), button.dataset.decision); });
     document.getElementById("export-audit").addEventListener("click", exportAudit);
   }
