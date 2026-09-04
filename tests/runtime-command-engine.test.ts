@@ -10,6 +10,57 @@ import { createDemoState } from "../src/runtime/demo-state.js";
 const now = new Date("2026-09-04T12:00:00.000Z");
 
 describe("motor de comandos do runtime", () => {
+  it("prepara Pix em infinitivo ou imperativo sem executar débito", () => {
+    for (const verb of ["Preparar", "Prepare"]) {
+      const state = createDemoState("org-test", now);
+      const baseline = state.balanceInCents;
+      const result = runCommand(
+        state,
+        `${verb} Pix de R$ 125,00 para fornecedor`,
+        "prepare-pix",
+        now,
+      );
+      expect(result.value.approval).toMatchObject({
+        kind: "payment",
+        status: "PENDING",
+        amountInCents: 12500,
+      });
+      expect(state.balanceInCents).toBe(baseline);
+    }
+  });
+  it("não substitui valor monetário inválido por uma transferência padrão", () => {
+    for (const amount of ["R$ 0", "R$ -50", "R$ 1.000.000,01", "R$ 1.2"]) {
+      const state = createDemoState("org-test", now);
+      expect(() =>
+        runCommand(state, `Faça um Pix de ${amount}`, "invalid-amount", now),
+      ).toThrow(/valor/i);
+      expect(state.approvals).toHaveLength(1);
+    }
+  });
+
+  it("aprovar bloqueio de fraude não cria despesa pelo valor citado", () => {
+    const state = createDemoState("org-test", now);
+    const initial = state.balanceInCents;
+    const approval = runCommand(
+      state,
+      "Bloqueie a transação suspeita de R$ 100",
+      "fraud-001",
+      now,
+    ).value.approval;
+    expect(approval).not.toBeNull();
+    if (!approval) return;
+    const decision = decideApproval(
+      state,
+      approval.id,
+      "APPROVE",
+      1,
+      "decision-fraud",
+      now,
+    );
+    expect(decision.value.movement).toBeNull();
+    expect(state.balanceInCents).toBe(initial);
+  });
+
   it("mantém as regras de intenção, ação e prompt injection", () => {
     expect(
       classifyCommand("Faça um Pix de R$ 1.250 para o fornecedor"),

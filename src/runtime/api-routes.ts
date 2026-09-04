@@ -131,6 +131,15 @@ async function startSession(
   bank: BankApplication,
   config: ApiRuntimeConfig,
 ): Promise<unknown> {
+  if (
+    request.headers.origin &&
+    !isTrustedOrigin(request.headers.origin, config.appOrigin)
+  )
+    throw new RuntimeError(
+      403,
+      "ORIGIN_REJECTED",
+      "A origem da sessão não foi autorizada.",
+    );
   const existingToken = parseCookie(request.headers.cookie, config.cookieName);
   const started = await bank.startSession(existingToken, new Date());
   reply.header(

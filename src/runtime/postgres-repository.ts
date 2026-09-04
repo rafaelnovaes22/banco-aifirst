@@ -103,6 +103,19 @@ const SCHEMA_STATEMENTS = [
       END IF;
     END;
     $audit_trigger$`,
+  `DO $audit_truncate_trigger$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'audit_records_no_truncate'
+          AND tgrelid = 'audit_records'::regclass
+      ) THEN
+        CREATE TRIGGER audit_records_no_truncate
+        BEFORE TRUNCATE ON audit_records
+        FOR EACH STATEMENT EXECUTE FUNCTION reject_audit_records_mutation();
+      END IF;
+    END;
+    $audit_truncate_trigger$`,
 ] as const;
 
 const SELECT_SESSION = `SELECT
@@ -150,11 +163,17 @@ export class PostgresBankRepository implements BankRepository {
     }
     this.pool = (options.poolFactory ?? defaultPoolFactory)({
       connectionString: databaseUrl,
+      max: 10,
+      connectionTimeoutMillis: 5_000,
+      statement_timeout: 10_000,
+      idle_in_transaction_session_timeout: 10_000,
     });
   }
 
   public async initialize(): Promise<void> {
     await this.withTransaction(async (client) => {
+      // PORQUÊ: duas réplicas podem iniciar juntas; DDL idempotente sozinho ainda tem corrida.
+      await client.query("SELECT pg_advisory_xact_lock(224617031)");
       for (const statement of SCHEMA_STATEMENTS) await client.query(statement);
     });
   }

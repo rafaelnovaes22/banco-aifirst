@@ -80,8 +80,9 @@ function createApproval(
   now: Date,
 ): BankApproval {
   const details = APPROVAL_DETAILS[intent];
-  const amountInCents =
-    parseAmountInCents(command) ?? details.defaultAmountInCents;
+  const amountInCents = ["payment", "cash", "tax"].includes(intent)
+    ? (parseAmountInCents(command) ?? details.defaultAmountInCents)
+    : undefined;
   const recipientId =
     intent === "payment" ? state.recipients[0]?.id : undefined;
   return {
@@ -89,7 +90,7 @@ function createApproval(
     kind: intent,
     label: details.label,
     title: titleFor(details.title, amountInCents),
-    detail: details.detail,
+    detail: intent === "payment" ? recipientDetail(state) : details.detail,
     amountInCents,
     recipientId,
     createdAt: now.toISOString(),
@@ -145,13 +146,31 @@ const APPROVAL_DETAILS: Record<
 
 function parseAmountInCents(command: string): number | undefined {
   const match =
-    command.match(/r\$\s*([\d.]+(?:,\d{1,2})?)/i) ??
-    command.match(/([\d.]+(?:,\d{1,2})?)\s+reais/i);
-  if (!match?.[1]) return undefined;
-  const amount = Number(match[1].replace(/\./g, "").replace(",", "."));
+    command.match(/r\$\s*([^\s]+)/i) ?? command.match(/([^\s]+)\s+reais/i);
+  if (!match?.[1] && !/r\$|\breais\b/i.test(command)) return undefined;
+  const token = match?.[1] ?? "";
+  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(token))
+    throw unprocessable(
+      "INVALID_AMOUNT",
+      `Valor ${token || "ausente"} inválido. Use reais, por exemplo R$ 1.250,00.`,
+    );
+  const amount = Number(token.replace(/\./g, "").replace(",", "."));
   if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000)
-    return undefined;
+    throw unprocessable(
+      "INVALID_AMOUNT",
+      `Valor ${token} inválido. Use de R$ 0,01 a R$ 1.000.000,00 no sandbox.`,
+    );
   return Math.round(amount * 100);
+}
+
+function recipientDetail(state: BankState): string {
+  const recipient = state.recipients[0];
+  if (!recipient)
+    throw unprocessable(
+      "NO_SANDBOX_RECIPIENT",
+      "Nenhum favorecido demonstrativo disponível.",
+    );
+  return `Favorecido demonstrativo: ${recipient.name} (${recipient.keyMasked}). Confira antes de aprovar. Nenhum dinheiro real será movimentado.`;
 }
 
 function titleFor(template: string, amountInCents: number | undefined): string {
@@ -257,7 +276,11 @@ function applyApprovedAction(
   approval: BankApproval,
   now: Date,
 ): SandboxMovement | null {
-  if (!approval.amountInCents) return null;
+  if (
+    !["payment", "cash", "tax"].includes(approval.kind) ||
+    !approval.amountInCents
+  )
+    return null;
   if (approval.amountInCents > state.balanceInCents) {
     throw unprocessable(
       "INSUFFICIENT_SANDBOX_BALANCE",
