@@ -156,36 +156,36 @@ const PLANS: Record<
 > = {
   fraud: {
     agent: "Agente de Risco",
-    safe: "Analisei 128 lançamentos. Duas transações pedem revisão. Nenhum bloqueio foi aplicado.",
+    safe: "Este cenário demonstra revisão de risco. Consulte os movimentos e as aprovações; não há detecção de fraude em contas reais.",
     controlled:
-      "Preparei o bloqueio preventivo das transações suspeitas e aguardo sua aprovação.",
+      "Preparei uma decisão demonstrativa de bloqueio e aguardo sua aprovação. Nenhuma conta real será afetada.",
   },
   tax: {
     agent: "Agente Fiscal",
-    safe: "Projetei R$ 24.680 em tributos para o mês. A reserva atual cobre 121% da estimativa.",
+    safe: "O cenário fiscal usa valores fictícios e não calcula tributos de uma empresa real. Confira o valor antes de preparar a simulação.",
     controlled:
-      "Preparei o pagamento de R$ 24.680 em tributos e aguardo sua aprovação.",
+      "Preparei uma simulação de pagamento de tributos. Confira o valor da aprovação.",
   },
   payment: {
     agent: "Agente de Pagamentos",
-    safe: "Listei os pagamentos pendentes e validei favorecidos, datas e limites. Nenhuma saída foi executada.",
+    safe: "Consulte os pagamentos e favorecidos fictícios no cockpit. Para simular uma transferência, informe o valor em reais.",
     controlled:
       "Validei o pedido. Qualquer saída de dinheiro precisa da sua aprovação.",
   },
   cash: {
     agent: "Agente de Caixa",
-    safe: "Projetei a liquidez para 60 dias. A reserva recomendada é de R$ 42.000, sem movimentação automática.",
+    safe: "A projeção e a reserva exibidas pertencem ao cenário fictício. Nenhuma conta externa foi consultada.",
     controlled:
-      "A separação da reserva mantém 60 dias de operação e aguarda sua aprovação.",
+      "Preparei a separação de uma reserva fictícia e aguardo sua aprovação.",
   },
   audit: {
     agent: "Agente de Auditoria",
-    safe: "Conferi políticas, evidências e aprovações. A trilha está íntegra e pronta para exportação.",
+    safe: "Abra Auditoria para verificar a integridade da trilha desta sessão e exportar os registros.",
     controlled: "A exportação controlada foi preparada e aguarda aprovação.",
   },
   general: {
     agent: "Orquestrador",
-    safe: "Transformei o pedido em análise. Para executar, informe objetivo, prazo e limite de risco.",
+    safe: "Reconheço comandos demonstrativos de caixa, Pix, tributos, risco e auditoria. Informe uma dessas ações para continuar.",
     controlled:
       "A mudança de política foi preparada e aguarda aprovação do responsável.",
   },

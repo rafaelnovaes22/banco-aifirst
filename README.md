@@ -34,6 +34,8 @@ docker build -t banco-aifirst .
 
 O gate único valida formato, lint, tipos, testes, build, smoke, segurança, ataques de prompt injection e cenários golden.
 
+`npm run test:postgres:local` acrescenta testes reais de persistência, concorrência e integridade em PostgreSQL 16 descartável. Consulte [arquitetura e limites](docs/ARCHITECTURE.md) e [liberação](docs/RELEASE.md).
+
 ## Arquitetura
 
 - `src/runtime/`: aplicação segura, política de comandos, sessões e persistência.
