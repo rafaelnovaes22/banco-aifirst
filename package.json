@@ -15,7 +15,11 @@
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.{ts,mjs}\" \"evals/**/*.mjs\" \"styles/**/*.css\" \"app.html\" \"*.{json,ts,mjs,md}\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.{ts,mjs}\" \"evals/**/*.mjs\" \"styles/**/*.css\" \"app.html\" \"*.{json,ts,mjs,md}\"",
     "start": "node dist/main.js",
-    "demo": "npm run build --silent && node dist/demo/run-demo.js"
+    "demo": "npm run build --silent && node dist/demo/run-demo.js",
+    "build:sites": "npm run build --silent && node scripts/build-sites.ts",
+    "dev:sites": "node scripts/dev-sites.ts",
+    "test:sites": "npm run typecheck:sites && node --test sites/*.test.ts",
+    "typecheck:sites": "tsc -p tsconfig.sites.json"
   },
   "keywords": [
     "fintech",
@@ -43,9 +47,11 @@
     "@eslint/js": "10.0.1",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.23.1",
+    "esbuild": "^0.28.2",
     "eslint": "10.9.1",
     "husky": "9.1.7",
     "lint-staged": "17.4.1",
+    "miniflare": "^5.20260917.0-alpha",
     "prettier": "3.9.6",
     "typescript": "^5.7.2",
     "typescript-eslint": "8.69.0",

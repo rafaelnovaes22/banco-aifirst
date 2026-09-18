@@ -47,6 +47,12 @@ O gate único valida formato, lint, tipos, testes, build, smoke, segurança, ata
 
 O adaptador Asaas é testado contra o contrato oficial, mas fica desligado no runtime público. O serviço publicado opera somente como sandbox.
 
+## Sites
+
+Pacote ChatGPT Sites em `sites/` com os mesmos contratos `/api/v1` e D1 por sessão.
+Detalhes em [Sites](docs/SITES.md). Comandos: `npm run build:sites`, `npm run dev:sites`,
+`npm run test:sites`. No Sites vale alçada de R$ 5.000 e aprovador diferente do criador.
+
 ## Limite legal
 
 Este projeto não é uma instituição financeira. Não abre contas, não recebe depósitos e não movimenta dinheiro. Os valores e favorecidos são fictícios.
