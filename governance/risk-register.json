@@ -41,6 +41,30 @@
       "classification": "baixo",
       "controls": ["Dockerfile", "nginx.conf"],
       "residual": "baixo"
+    },
+    {
+      "id": "R5",
+      "title": "Aprovação acima da alçada ou pelo próprio criador no Sites",
+      "probability": 2,
+      "impact": 3,
+      "level": 6,
+      "classification": "medio",
+      "controls": [
+        "sites/policy.ts",
+        "sites/bank-engine.ts",
+        "sites/bank-sites.test.ts"
+      ],
+      "residual": "baixo"
+    },
+    {
+      "id": "R6",
+      "title": "Administrador do banco D1 alterar trilha fora da aplicação",
+      "probability": 2,
+      "impact": 4,
+      "level": 8,
+      "classification": "medio",
+      "controls": ["sites/audit.ts", "drizzle/0000_banco.sql"],
+      "residual": "baixo"
     }
   ]
 }

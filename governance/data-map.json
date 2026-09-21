@@ -1,14 +1,26 @@
 {
   "project": "banco-aifirst",
-  "scope": "MVP demonstrativo sem persistência ou transmissão de dados",
+  "scope": "MVP demonstrativo com persistência isolada por sessão (PostgreSQL no Railway, D1 no Sites)",
   "personalData": [
     {
       "field": "texto livre do comando demonstrativo",
       "purpose": "simular a interpretação do objetivo financeiro no navegador",
       "basis": "consentimento pelo uso voluntário da demonstração",
-      "retention": "somente memória da aba, sem envio ao servidor"
+      "retention": "ciclo da sessão de demonstração, sem exportação para terceiros"
+    },
+    {
+      "field": "hash SHA-256 de token de sessão e CSRF",
+      "purpose": "autenticar a sessão sem armazenar segredo legível",
+      "basis": "legítimo interesse na segurança da demonstração",
+      "retention": "expiração da sessão em 8 horas, revogável no logout"
     }
   ],
-  "simulatedData": ["saldo", "transações", "projeções", "empresa", "eventos de auditoria"],
+  "simulatedData": [
+    "saldo",
+    "transações",
+    "projeções",
+    "empresa",
+    "eventos de auditoria"
+  ],
   "networkProcessing": false
 }

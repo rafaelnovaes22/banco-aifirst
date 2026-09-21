@@ -1,51 +1,61 @@
-import { randomUUID } from "node:crypto";
-
 import type {
   AuditDraft,
   BankApproval,
   BankState,
-  CommandIntent,
   CommandResult,
   MutationReceipt,
   SandboxMovement,
-  StateMutation,
-} from "./contracts.js";
-import { buildPlan, classifyCommand } from "./command-policy.js";
-import { conflict, unprocessable } from "./runtime-error.js";
+} from "./types.ts";
+import { buildPlan, classifyCommand } from "./command-policy.ts";
+import type { CommandIntent } from "./command-policy.ts";
+import { evaluateApprovalPayment } from "./policy.ts";
+import { HttpError } from "./validation.ts";
 
+// PORQUÊ: motor do Sites espelha command-engine do Node e adiciona criador mais
+// alçada na decisão. Idempotência e recibos evitam débito duplo em retry.
 const RECEIPT_LIMIT = 256;
 
-export interface ApprovalDecisionResult {
-  readonly approval: BankApproval;
-  readonly movement: SandboxMovement | null;
+export interface ApprovalDecision {
+  approval: BankApproval;
+  movement: SandboxMovement | null;
+  blocked?: boolean;
+  detail?: string;
 }
 
-export function runCommand(
+export function runBankCommand(
   state: BankState,
+  actorId: string,
   rawCommand: unknown,
   idempotencyKey: string,
   now: Date,
-): StateMutation<CommandResult> {
+): { value: CommandResult["payload"]; audits: AuditDraft[] } {
   const receiptKey = `command:${idempotencyKey}`;
   const existing = state.receipts[receiptKey];
   if (existing)
-    return { value: existing.response as CommandResult, audits: [] };
-  const result = buildCommandResult(state, rawCommand, now);
+    return { value: existing.response as CommandResult["payload"], audits: [] };
+  const result = buildCommandResult(state, actorId, rawCommand, now);
   storeReceipt(state, receiptKey, result, now);
-  return { value: result, audits: [commandAudit(result, now)] };
+  return { value: result, audits: [commandAudit(result)] };
 }
 
 function buildCommandResult(
   state: BankState,
+  actorId: string,
   rawCommand: unknown,
   now: Date,
-): CommandResult {
+): CommandResult["payload"] {
   const classification = classifyCommand(rawCommand);
   if (!classification.ok)
     return blockedResult(String(rawCommand ?? ""), classification.reason);
   const plan = buildPlan(classification.intent, classification.action);
   const approval = plan.approvalRequired
-    ? createApproval(state, classification.intent, classification.command, now)
+    ? createApproval(
+        state,
+        actorId,
+        classification.intent,
+        classification.command,
+        now,
+      )
     : null;
   if (approval) state.approvals.unshift(approval);
   return {
@@ -57,7 +67,10 @@ function buildCommandResult(
   };
 }
 
-function blockedResult(command: string, reason: string): CommandResult {
+function blockedResult(
+  command: string,
+  reason: string,
+): CommandResult["payload"] {
   const messages: Record<string, string> = {
     empty: "Escreva um objetivo financeiro para o agente analisar.",
     too_long: "O comando ultrapassou 240 caracteres. Resuma o objetivo.",
@@ -67,7 +80,7 @@ function blockedResult(command: string, reason: string): CommandResult {
   return {
     command: command.slice(0, 240),
     agent: "Guardião de Segurança",
-    message: messages[reason] ?? messages.unsafe ?? "Comando bloqueado.",
+    message: messages[reason] ?? messages["unsafe"] ?? "Comando bloqueado.",
     status: "BLOCKED",
     approval: null,
   };
@@ -75,6 +88,7 @@ function blockedResult(command: string, reason: string): CommandResult {
 
 function createApproval(
   state: BankState,
+  actorId: string,
   intent: CommandIntent,
   command: string,
   now: Date,
@@ -83,16 +97,15 @@ function createApproval(
   const amountInCents = ["payment", "cash", "tax"].includes(intent)
     ? (parseAmountInCents(command) ?? details.defaultAmountInCents)
     : undefined;
-  const recipientId =
-    intent === "payment" ? state.recipients[0]?.id : undefined;
   return {
-    id: randomUUID(),
+    id: crypto.randomUUID(),
     kind: intent,
     label: details.label,
     title: titleFor(details.title, amountInCents),
     detail: intent === "payment" ? recipientDetail(state) : details.detail,
     amountInCents,
-    recipientId,
+    recipientId: intent === "payment" ? state.recipients[0]?.id : undefined,
+    creatorId: actorId,
     createdAt: now.toISOString(),
     status: "PENDING",
     version: 1,
@@ -144,53 +157,42 @@ const APPROVAL_DETAILS: Record<
   },
 };
 
-function parseAmountInCents(command: string): number | undefined {
+export function parseAmountInCents(command: string): number | undefined {
   const match =
     command.match(/r\$\s*([^\s]+)/i) ?? command.match(/([^\s]+)\s+reais/i);
   if (!match?.[1] && !/r\$|\breais\b/i.test(command)) return undefined;
   const token = match?.[1] ?? "";
-  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(token))
-    throw unprocessable(
-      "INVALID_AMOUNT",
+  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(token)) {
+    throw new HttpError(
+      422,
       `Valor ${token || "ausente"} inválido. Use reais, por exemplo R$ 1.250,00.`,
     );
+  }
   const amount = Number(token.replace(/\./g, "").replace(",", "."));
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000)
-    throw unprocessable(
-      "INVALID_AMOUNT",
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
+    throw new HttpError(
+      422,
       `Valor ${token} inválido. Use de R$ 0,01 a R$ 1.000.000,00 no sandbox.`,
     );
+  }
   return Math.round(amount * 100);
 }
 
 function recipientDetail(state: BankState): string {
   const recipient = state.recipients[0];
-  if (!recipient)
-    throw unprocessable(
-      "NO_SANDBOX_RECIPIENT",
-      "Nenhum favorecido demonstrativo disponível.",
-    );
+  if (!recipient) {
+    throw new HttpError(422, "Nenhum favorecido demonstrativo disponível.");
+  }
   return `Favorecido demonstrativo: ${recipient.name} (${recipient.keyMasked}). Confira antes de aprovar. Nenhum dinheiro real será movimentado.`;
 }
 
 function titleFor(template: string, amountInCents: number | undefined): string {
   if (amountInCents === undefined) return template;
-  return template.replace("{amount}", formatBrl(amountInCents));
-}
-
-function formatBrl(amountInCents: number): string {
-  return new Intl.NumberFormat("pt-BR", {
+  const formatted = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(amountInCents / 100);
-}
-
-function createReceipt(
-  scope: string,
-  response: unknown,
-  now: Date,
-): MutationReceipt {
-  return { scope, response, createdAt: now.toISOString() };
+  return template.replace("{amount}", formatted);
 }
 
 function storeReceipt(
@@ -203,52 +205,72 @@ function storeReceipt(
   const ordered = Object.entries(state.receipts).sort((left, right) =>
     left[1].createdAt.localeCompare(right[1].createdAt),
   );
-  for (const [key] of ordered.slice(
+  const overflow = ordered.slice(
     0,
     Math.max(0, ordered.length - RECEIPT_LIMIT),
-  )) {
-    delete state.receipts[key];
-  }
+  );
+  for (const [key] of overflow) delete state.receipts[key];
 }
 
-function commandAudit(result: CommandResult, now: Date): AuditDraft {
-  const status =
-    result.status === "BLOCKED"
-      ? "BLOQUEADO"
-      : result.approval
-        ? "AGUARDANDO"
-        : "CONCLUÍDO";
+function createReceipt(
+  scope: string,
+  response: unknown,
+  now: Date,
+): MutationReceipt {
+  return { scope, response, createdAt: now.toISOString() };
+}
+
+function commandAudit(result: CommandResult["payload"]): AuditDraft {
+  const record = result as { status: string; approval: unknown; agent: string };
   return {
-    agent: result.agent,
-    action: result.approval ? "APROVAÇÃO_CRIADA" : "COMANDO_ANALISADO",
-    objectId: result.approval?.id ?? "command",
-    channel: "PANEL",
-    status,
-    detail: result.message,
-    recordedAt: now.toISOString(),
+    agent: record.agent,
+    action: record.approval ? "APROVAÇÃO_CRIADA" : "COMANDO_ANALISADO",
+    resourceId: (record.approval as { id?: string } | null)?.id ?? "command",
+    payload: { status: record.status },
   };
 }
 
-export function decideApproval(
+export function decideBankApproval(
   state: BankState,
+  actorId: string,
   approvalId: string,
   decision: "APPROVE" | "REJECT",
   expectedVersion: number,
   idempotencyKey: string,
   now: Date,
-): StateMutation<ApprovalDecisionResult> {
+): { value: ApprovalDecision; audits: AuditDraft[] } {
   const receiptKey = `approval:${approvalId}:${idempotencyKey}`;
   const existing = state.receipts[receiptKey];
   if (existing)
-    return { value: existing.response as ApprovalDecisionResult, audits: [] };
+    return { value: existing.response as ApprovalDecision, audits: [] };
   const approval = requirePendingApproval(state, approvalId, expectedVersion);
-  const movement =
-    decision === "APPROVE" ? applyApprovedAction(state, approval, now) : null;
-  approval.status = decision === "APPROVE" ? "APPROVED" : "REJECTED";
-  approval.version += 1;
-  const value = { approval: structuredClone(approval), movement };
+  if (decision === "REJECT") {
+    approval.status = "REJECTED";
+    approval.version += 1;
+    const value: ApprovalDecision = {
+      approval: { ...approval },
+      movement: null,
+    };
+    storeReceipt(state, receiptKey, value, now);
+    return { value, audits: [approvalAudit(approval, false)] };
+  }
+  const movement = applyApproval(state, actorId, approval, now);
+  if (!movement.allowed) {
+    const value: ApprovalDecision = {
+      approval: { ...approval },
+      movement: null,
+      blocked: true,
+      detail: movement.reasons.join("; "),
+    };
+    storeReceipt(state, receiptKey, value, now);
+    return { value, audits: [blockedAudit(approval, movement.reasons)] };
+  }
+  const value: ApprovalDecision = {
+    approval: { ...approval },
+    movement: movement.record,
+  };
   storeReceipt(state, receiptKey, value, now);
-  return { value, audits: [approvalAudit(approval, decision, now)] };
+  return { value, audits: [approvalAudit(approval, true)] };
 }
 
 function requirePendingApproval(
@@ -260,66 +282,80 @@ function requirePendingApproval(
     (candidate) => candidate.id === approvalId,
   );
   if (!approval)
-    throw conflict(
-      "APPROVAL_NOT_FOUND",
-      "A aprovação não existe nesta sessão.",
-    );
-  if (approval.version !== expectedVersion)
-    throw conflict("VERSION_CONFLICT", "A aprovação mudou. Atualize a tela.");
-  if (approval.status !== "PENDING")
-    throw conflict("APPROVAL_DECIDED", "A aprovação já recebeu uma decisão.");
+    throw new HttpError(409, "A aprovação não existe nesta sessão.");
+  if (approval.version !== expectedVersion) {
+    throw new HttpError(409, "A aprovação mudou. Atualize a tela.");
+  }
+  if (approval.status !== "PENDING") {
+    throw new HttpError(409, "A aprovação já recebeu uma decisão.");
+  }
   return approval;
 }
 
-function applyApprovedAction(
+function applyApproval(
   state: BankState,
+  actorId: string,
   approval: BankApproval,
   now: Date,
-): SandboxMovement | null {
+): { allowed: boolean; reasons: string[]; record: SandboxMovement | null } {
   if (
     !["payment", "cash", "tax"].includes(approval.kind) ||
     !approval.amountInCents
-  )
-    return null;
-  if (approval.amountInCents > state.balanceInCents) {
-    throw unprocessable(
-      "INSUFFICIENT_SANDBOX_BALANCE",
-      "O saldo demonstrativo não cobre a operação.",
-    );
+  ) {
+    approval.status = "APPROVED";
+    approval.version += 1;
+    return { allowed: true, reasons: [], record: null };
   }
-  const movement = createMovement(approval, now);
-  state.balanceInCents -= approval.amountInCents;
-  state.expensesInCents += approval.amountInCents;
-  state.movements.unshift(movement);
-  return movement;
-}
-
-function createMovement(approval: BankApproval, now: Date): SandboxMovement {
-  return {
-    id: randomUUID(),
+  if (approval.kind === "payment") {
+    const recipient = state.recipients.find(
+      (item) => item.id === approval.recipientId,
+    );
+    const verdict = evaluateApprovalPayment({
+      amountInCents: approval.amountInCents,
+      recipientVerified: recipient?.verified ?? false,
+      creatorId: approval.creatorId,
+      approverId: actorId,
+      balanceInCents: state.balanceInCents,
+    });
+    if (!verdict.allowed)
+      return { allowed: false, reasons: verdict.reasons, record: null };
+  } else if (approval.amountInCents > state.balanceInCents) {
+    return {
+      allowed: false,
+      reasons: ["O saldo demonstrativo não cobre a operação."],
+      record: null,
+    };
+  }
+  const record: SandboxMovement = {
+    id: crypto.randomUUID(),
     direction: "OUT",
     description: `${approval.label}, ambiente sandbox`,
-    amountInCents: approval.amountInCents ?? 0,
+    amountInCents: approval.amountInCents,
     occurredAt: now.toISOString(),
     status: "SANDBOX_CONFIRMED",
   };
+  state.balanceInCents -= approval.amountInCents;
+  state.expensesInCents += approval.amountInCents;
+  state.movements.unshift(record);
+  approval.status = "APPROVED";
+  approval.version += 1;
+  return { allowed: true, reasons: [], record };
 }
 
-function approvalAudit(
-  approval: BankApproval,
-  decision: "APPROVE" | "REJECT",
-  now: Date,
-): AuditDraft {
-  const approved = decision === "APPROVE";
+function approvalAudit(approval: BankApproval, approved: boolean): AuditDraft {
   return {
     agent: "Responsável humano",
     action: approved ? "APROVAÇÃO_CONFIRMADA" : "APROVAÇÃO_RECUSADA",
-    objectId: approval.id,
-    channel: "PANEL",
-    status: approved ? "APROVADO" : "RECUSADO",
-    detail: approved
-      ? `${approval.title}. Execução restrita ao sandbox.`
-      : `${approval.title}. Nenhuma ação executada.`,
-    recordedAt: now.toISOString(),
+    resourceId: approval.id,
+    payload: {},
+  };
+}
+
+function blockedAudit(approval: BankApproval, reasons: string[]): AuditDraft {
+  return {
+    agent: "Política de alçada",
+    action: "APROVAÇÃO_BLOQUEADA",
+    resourceId: approval.id,
+    payload: { reasons },
   };
 }

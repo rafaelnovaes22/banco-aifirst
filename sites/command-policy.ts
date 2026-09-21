@@ -1,7 +1,11 @@
-import type { CommandAction, CommandIntent, CommandPlan } from "./contracts.js";
+// PORQUÊ: mesma política do runtime Node, portada sem dependência de Node para o
+// bundle do Worker. Paridade verificada pelos mesmos 21 casos golden em teste.
+export type CommandIntent =
+  "cash" | "fraud" | "tax" | "payment" | "audit" | "general";
+export type CommandAction =
+  "read" | "simulate" | "prepare" | "execute" | "block" | "change_policy";
 
 export const MAX_COMMAND_LENGTH = 240;
-export const QUALITY_GATE = 0.95;
 
 const PROHIBITED_PATTERNS: readonly RegExp[] = [
   /ignore\s+(previous|prior|above)\s+(instructions?|rules?)/i,
@@ -98,8 +102,9 @@ export function detectIntent(command: string): CommandIntent {
     /fraude|suspeit|golpe|anomalia|risco.+(transa[cç]|pagamento|movimenta[cç])/.test(
       lower,
     )
-  )
+  ) {
     return "fraud";
+  }
   if (/imposto|tribut|fiscal|simples nacional|\b(o|guia do) das\b/.test(lower))
     return "tax";
   if (
@@ -117,8 +122,9 @@ export function detectAction(command: string): CommandAction {
   const lower = command.toLocaleLowerCase("pt-BR");
   if (
     /(altere|mude|configure|atualize).+(pol[ií]tica|regra|limite)/.test(lower)
-  )
+  ) {
     return "change_policy";
+  }
   if (/\b(bloqueie|congele|suspenda|cancele)\b/.test(lower)) return "block";
   if (/\b(proje[cç][aã]o|projete|calcule|simule|estime)\b/.test(lower))
     return "simulate";
@@ -127,6 +133,12 @@ export function detectAction(command: string): CommandAction {
   if (/\b(prepare|preparar|monte|planeje|organize|proteja)\b/.test(lower))
     return "prepare";
   return "read";
+}
+
+export interface CommandPlan {
+  agent: string;
+  approvalRequired: boolean;
+  message: string;
 }
 
 export function requiresApproval(

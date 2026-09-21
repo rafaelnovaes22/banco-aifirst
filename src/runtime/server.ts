@@ -25,7 +25,7 @@ export async function buildBankServer(
 ): Promise<FastifyInstance> {
   const app = Fastify({
     logger: config.logger ?? false,
-    trustProxy: true,
+    trustProxy: (_address: string, hop: number): boolean => hop < 1,
     bodyLimit: 16_384,
   });
   registerEmptyFormParser(app);
@@ -50,9 +50,11 @@ function registerEmptyFormParser(app: FastifyInstance): void {
 
 function securityHeaders(secure: boolean) {
   return async (
-    _request: unknown,
+    request: FastifyRequest,
     reply: { header(name: string, value: string): unknown },
   ): Promise<void> => {
+    if (request.url.startsWith("/api/"))
+      reply.header("Cache-Control", "no-store");
     reply.header("Content-Security-Policy", contentSecurityPolicy());
     reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
     reply.header("X-Content-Type-Options", "nosniff");
