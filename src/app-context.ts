@@ -19,6 +19,10 @@ import {
   fetchJsonHttpClient,
   type LlmEnv,
 } from "./domain/llm-assistant.js";
+import {
+  withJevShadowAnswer,
+  type JevCheckDeps,
+} from "./domain/jev-intent-check.js";
 import type { RecurringRule } from "./domain/cash-forecast.js";
 import { ChargeBook } from "./domain/charge-book.js";
 import type { TransactionMirror } from "./domain/receipt-matcher.js";
@@ -66,6 +70,9 @@ export interface BaasProviderConfig {
 
 type AppRuntimeEnv = LlmEnv & {
   readonly ASAAS_WEBHOOK_TOKEN?: string;
+  readonly TYPESAFE_API_KEY?: string;
+  readonly TYPESAFE_MODEL?: string;
+  readonly JEV_ENABLED?: string;
 };
 
 export function createAppContext(
@@ -121,10 +128,21 @@ export async function registerAllRoutes(
   // PORQUÊ: com chave free no ambiente, o LLM real assume. Sem chave, o stub
   // determinístico responde. O schema valida os dois do mesmo jeito.
   const liveAssistant = assistantFromEnv(env, fetchJsonHttpClient());
-  const answerDraft = liveAssistant
+  const baseAnswerDraft = liveAssistant
     ? (redactedText: string) => liveAssistant.draftAnswer(redactedText)
     : async (redactedText: string) =>
         parseAssistantOutput(draftFromKeywords(redactedText));
+  // PORQUÊ: o Jev observa cada draft em shadow (fire-and-forget) como segunda
+  // opinião calibrada. Desligado por default; nunca altera resposta, ticket ou dinheiro.
+  const jevDeps: JevCheckDeps = {
+    apiKey: env.TYPESAFE_API_KEY,
+    model: env.TYPESAFE_MODEL,
+    enabled: env.JEV_ENABLED === "true",
+  };
+  const answerDraft = (redactedText: string) =>
+    withJevShadowAnswer(baseAnswerDraft, redactedText, jevDeps, (fields) =>
+      app.log.info(fields, "jev shadow diverge do assistente"),
+    );
   await registerWhatsappWebhook(app, {
     tickets: context.tickets,
     auditSink,
