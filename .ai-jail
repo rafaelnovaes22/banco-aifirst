@@ -6,3 +6,9 @@ command = [
     "node",
     "evals/smoke.mjs",
 ]
+mask = [".env"]
+no_gpu = true
+no_docker = true
+no_display = true
+no_save_config = false
+private_home = true

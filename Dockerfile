@@ -1,8 +1,26 @@
-# PORQUÊ: serve o index.html único via nginx. Sem build, sem runtime.
-# Porta 8080 fixa, igual à variável PORT do serviço e ao target do domínio.
-FROM nginx:1.27-alpine
-COPY index.html /usr/share/nginx/html/index.html
-COPY assets/ /usr/share/nginx/html/assets/
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# PORQUÊ: o build contém TypeScript; a imagem final carrega apenas runtime e ativos públicos.
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json tsconfig.build.json ./
+COPY src/ ./src/
+RUN npm run build
+
+FROM node:22-alpine AS runtime
+ENV NODE_ENV=production
+ENV PORT=8080
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build /app/dist/ ./dist/
+COPY index.html app.html icon.svg ./
+COPY assets/ ./assets/
+COPY styles/ ./styles/
+COPY governance/ ./governance/
+RUN chown -R node:node /app
+USER node
 EXPOSE 8080
-CMD ["nginx", "-g", "daemon off;"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+CMD ["node", "dist/main.js"]

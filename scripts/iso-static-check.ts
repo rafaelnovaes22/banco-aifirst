@@ -68,12 +68,13 @@ const html: string = readFileSync(htmlPath, "utf8");
   if (hasForm && !/WhatsApp/i.test(html)) issues.push({ file: "index.html", problem: "form sem aviso de destino WhatsApp", fix: "informar que envia para WhatsApp" });
 }
 
-// CLAUSULA (outcome verificavel: titulo, CTA, conversao whatsapp)
+// CLAUSULA (outcome verificável: título, acesso ao MVP e disclosure regulatório)
 {
   if (!/<title>[^<]{10,}<\/title>/.test(html)) issues.push({ file: "index.html", problem: "title ausente ou curto", fix: "declarar outcome no title" });
-  if (!/wa\.me\//.test(html)) issues.push({ file: "index.html", problem: "sem conversao whatsapp", fix: "adicionar CTA com wa.me" });
-  const ctas: number = (html.match(/class="bt bt1"/g) ?? []).length;
-  if (ctas === 0) issues.push({ file: "index.html", problem: "sem CTA primario", fix: "adicionar botao bt1" });
+  if (!/href="app\.html"/.test(html)) issues.push({ file: "index.html", problem: "sem acesso ao MVP", fix: "adicionar CTA para app.html" });
+  if (!/não é instituição financeira/i.test(html)) issues.push({ file: "index.html", problem: "disclosure regulatório ausente", fix: "declarar que o MVP não é instituição financeira" });
+  const appPath: string = join(root, "app.html");
+  if (!existsSync(appPath)) issues.push({ file: "app.html", problem: "cockpit ausente", fix: "criar experiência demonstrativa" });
 }
 
 if (issues.length > 0) {

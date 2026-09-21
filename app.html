@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="MVP interativo do Fluxo, banco AI First para empresas. Dados simulados, governança e agentes auditáveis."
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>Fluxo OS, Banco AI First</title>
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/app.css" />
+  </head>
+  <body data-app-state="booting">
+    <a class="skip-link" href="#main">Ir para o conteúdo</a>
+    <div class="shell">
+      <aside class="sidebar" aria-label="Navegação principal">
+        <a class="brand" href="index.html" aria-label="Fluxo, página inicial">
+          <span class="brand-mark" aria-hidden="true">F</span>
+          <span>FLUXO<em>.</em></span>
+        </a>
+        <div class="demo-tag">MVP INTERATIVO</div>
+        <nav class="nav" id="nav">
+          <button class="nav-item active" data-view="cockpit">
+            <span>01</span>Cockpit
+          </button>
+          <button class="nav-item" data-view="agents">
+            <span>02</span>Agentes
+          </button>
+          <button class="nav-item" data-view="audit">
+            <span>03</span>Auditoria
+          </button>
+          <button class="nav-item" data-view="governance">
+            <span>04</span>Governança
+          </button>
+        </nav>
+        <div class="sidebar-foot">
+          <span class="status-dot is-loading" id="system-status-dot"></span>
+          <div>
+            <b id="system-status">Conectando</b
+            ><small id="system-detail">Sincronizando sandbox</small>
+          </div>
+        </div>
+      </aside>
+
+      <main id="main">
+        <div class="app-banner" id="app-banner" role="alert" hidden>
+          <span id="app-banner-message"
+            >Não foi possível carregar o cockpit.</span
+          >
+          <button id="retry-app" type="button">Tentar novamente</button>
+        </div>
+        <header class="topbar">
+          <button
+            class="mobile-menu"
+            id="mobile-menu"
+            aria-label="Abrir menu"
+            aria-expanded="false"
+          >
+            Menu
+          </button>
+          <div>
+            <p class="eyebrow">EMPRESA DEMONSTRAÇÃO</p>
+            <b class="skeleton-text" id="organization-name"
+              >Carregando empresa</b
+            >
+          </div>
+          <div class="top-actions">
+            <span class="live" id="live-status"><i></i>Sandbox conectado</span>
+            <a class="outline-button" href="index.html">Conhecer o projeto</a>
+          </div>
+        </header>
+
+        <section
+          class="view active"
+          id="view-cockpit"
+          aria-labelledby="cockpit-title"
+          aria-busy="true"
+        >
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">VISÃO EXECUTIVA</p>
+              <h1 id="cockpit-title">Seu dinheiro, explicado.</h1>
+            </div>
+            <p class="view-note">
+              Dados consolidados<br /><b id="cockpit-as-of"
+                >Sincronizando agora</b
+              >
+            </p>
+          </div>
+
+          <div class="state-panel" id="cockpit-state" hidden>
+            <p id="cockpit-state-message">
+              Não foi possível atualizar os dados.
+            </p>
+            <button class="outline-button" id="retry-cockpit" type="button">
+              Tentar novamente
+            </button>
+          </div>
+
+          <div class="hero-balance">
+            <div>
+              <p>CAIXA DISPONÍVEL</p>
+              <strong
+                class="skeleton skeleton-value"
+                id="balance"
+                aria-label="Carregando saldo"
+                >R$ 000.000</strong
+              >
+              <span class="trend skeleton skeleton-copy" id="balance-trend"
+                >Carregando variação</span
+              >
+            </div>
+            <div class="forecast">
+              <span>PREVISÃO EM 30 DIAS</span>
+              <b
+                class="skeleton skeleton-number"
+                id="forecast"
+                aria-label="Carregando previsão"
+                >R$ 000.000</b
+              >
+              <small>Cenário demonstrativo, sem predição real</small>
+            </div>
+          </div>
+
+          <div class="cockpit-grid">
+            <section class="ai-command" aria-labelledby="command-title">
+              <div class="pulse-line" aria-hidden="true"></div>
+              <p class="eyebrow">COMANDO AI FIRST</p>
+              <h2 id="command-title">
+                Fale o resultado. Os agentes montam o plano.
+              </h2>
+              <form id="command-form">
+                <label class="sr-only" for="command-input"
+                  >Comando para os agentes</label
+                >
+                <textarea
+                  id="command-input"
+                  maxlength="240"
+                  placeholder="Ex.: proteja meu caixa pelos próximos 60 dias"
+                  disabled
+                ></textarea>
+                <div class="command-foot">
+                  <span id="command-count">0/240</span>
+                  <button id="command-submit" type="submit" disabled>
+                    Analisar comando
+                  </button>
+                </div>
+              </form>
+              <div class="suggestions" aria-label="Comandos de exemplo">
+                <button data-command="Projete meu caixa por 60 dias" disabled>
+                  Projetar caixa
+                </button>
+                <button
+                  data-command="Faça um Pix de R$ 100 para o fornecedor"
+                  disabled
+                >
+                  Preparar Pix
+                </button>
+              </div>
+              <div
+                class="agent-response"
+                id="agent-response"
+                aria-live="polite"
+              >
+                <span class="response-label">ORQUESTRADOR</span>
+                <p>Pronto. Descreva o resultado em uma frase.</p>
+              </div>
+            </section>
+
+            <section class="approval-queue" aria-labelledby="approval-title">
+              <div class="section-title">
+                <div>
+                  <p class="eyebrow">HUMANO NO CONTROLE</p>
+                  <h2 id="approval-title">Aprovações</h2>
+                </div>
+                <span class="count-badge is-loading" id="approval-count"
+                  >0</span
+                >
+              </div>
+              <div id="approval-list" aria-busy="true">
+                <div class="loading-stack" aria-label="Carregando aprovações">
+                  <span class="skeleton skeleton-copy"></span>
+                  <span class="skeleton skeleton-title"></span>
+                  <span class="skeleton skeleton-copy"></span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="metrics-row">
+            <article>
+              <span>CONTAS A RECEBER</span
+              ><b class="skeleton skeleton-number" id="receivables"
+                >R$ 000.000</b
+              ><small class="skeleton skeleton-copy" id="receivables-detail"
+                >Carregando previsão</small
+              >
+            </article>
+            <article>
+              <span>DESPESAS EM 30 DIAS</span
+              ><b class="skeleton skeleton-number" id="expenses">R$ 000.000</b
+              ><small>Consolidado do período</small>
+            </article>
+            <article>
+              <span>COBRANÇAS ABERTAS</span
+              ><b class="skeleton skeleton-number" id="charges-open">00</b
+              ><small class="skeleton skeleton-copy" id="charges-detail"
+                >Carregando cobranças</small
+              >
+            </article>
+            <article>
+              <span>RISCO OPERACIONAL</span
+              ><b class="skeleton skeleton-number" id="risk-label">Carregando</b
+              ><small class="skeleton skeleton-copy" id="risk-detail"
+                >Calculando pontuação</small
+              >
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-agents" aria-labelledby="agents-title">
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">OPERAÇÃO AUTÔNOMA</p>
+              <h1 id="agents-title">Exército de agentes</h1>
+            </div>
+            <p class="view-note">
+              Autonomia limitada por política<br />Movimentação exige aprovação
+              humana
+            </p>
+          </div>
+          <div class="agent-map" id="agent-map">
+            <article class="agent-card">
+              <div class="agent-card-top">
+                <span class="agent-index">01</span
+                ><span class="agent-state">ATIVO</span>
+              </div>
+              <h2>Orquestrador</h2>
+              <p>
+                Transforma o objetivo em tarefas, escolhe especialistas e
+                registra cada decisão.
+              </p>
+            </article>
+            <article class="agent-card">
+              <div class="agent-card-top">
+                <span class="agent-index">02</span
+                ><span class="agent-state">ATIVO</span>
+              </div>
+              <h2>Agente de Caixa</h2>
+              <p>Prevê entradas e saídas, mede liquidez e propõe reservas.</p>
+            </article>
+            <article class="agent-card">
+              <div class="agent-card-top">
+                <span class="agent-index">03</span
+                ><span class="agent-state">ATIVO</span>
+              </div>
+              <h2>Agente de Risco</h2>
+              <p>Procura anomalias, fraude e desvios sem bloquear sozinho.</p>
+            </article>
+            <article class="agent-card">
+              <div class="agent-card-top">
+                <span class="agent-index">04</span
+                ><span class="agent-state">ATIVO</span>
+              </div>
+              <h2>Agente Fiscal</h2>
+              <p>Projeta tributos e separa evidências para a contabilidade.</p>
+            </article>
+            <article class="agent-card">
+              <div class="agent-card-top">
+                <span class="agent-index">05</span
+                ><span class="agent-state">ATIVO</span>
+              </div>
+              <h2>Agente de Pagamentos</h2>
+              <p>
+                Valida lote, favorecido e limite. A execução exige aprovação.
+              </p>
+            </article>
+            <article class="agent-card">
+              <div class="agent-card-top">
+                <span class="agent-index">06</span
+                ><span class="agent-state">ATIVO</span>
+              </div>
+              <h2>Agente de Auditoria</h2>
+              <p>
+                Confere política, qualidade e trilha antes e depois de cada
+                ação.
+              </p>
+            </article>
+          </div>
+          <div class="autonomy-panel">
+            <div>
+              <p class="eyebrow">GATE DE QUALIDADE</p>
+              <h2>95% antes de agir</h2>
+              <p>
+                Se a confiança cai, o agente interrompe a ação e solicita
+                revisão. Nenhum fluxo financeiro usa autonomia irrestrita.
+              </p>
+            </div>
+            <div
+              class="score-ring"
+              aria-label="Cenários de avaliação aprovados em 100 por cento"
+            >
+              <b>100%</b><span>EVALS</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-audit" aria-labelledby="audit-title">
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">RASTRO AUDITÁVEL</p>
+              <h1 id="audit-title">Auditoria em linguagem humana</h1>
+            </div>
+            <div class="audit-actions">
+              <span id="audit-chain-status">Integridade não verificada</span
+              ><button class="outline-button" id="export-audit" disabled>
+                Exportar CSV
+              </button>
+            </div>
+          </div>
+          <div class="state-panel" id="audit-state" hidden>
+            <p id="audit-state-message">
+              Não foi possível carregar a auditoria.
+            </p>
+            <button class="outline-button" id="retry-audit" type="button">
+              Tentar novamente
+            </button>
+          </div>
+          <div
+            class="audit-table"
+            role="region"
+            aria-label="Eventos de auditoria"
+            tabindex="0"
+          >
+            <div class="audit-row audit-header">
+              <span>Horário</span><span>Agente</span><span>Ação</span
+              ><span>Estado</span>
+            </div>
+            <div id="audit-list" aria-busy="true">
+              <div
+                class="audit-row audit-loading"
+                aria-label="Carregando eventos"
+              >
+                <span class="skeleton"></span><span class="skeleton"></span
+                ><span class="skeleton"></span><span class="skeleton"></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="view"
+          id="view-governance"
+          aria-labelledby="governance-title"
+        >
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">PRONTO PARA AUDITAR</p>
+              <h1 id="governance-title">Governança desde o primeiro comando</h1>
+            </div>
+            <p class="view-note">
+              Controles demonstrativos<br />Sem alegação de certificação
+            </p>
+          </div>
+          <div class="governance-grid">
+            <article>
+              <span>ISO/IEC 42001</span>
+              <h2>Sistema de gestão de IA</h2>
+              <p>
+                Inventário de agentes, riscos, responsáveis, evidências e ciclo
+                de revisão.
+              </p>
+              <b>8 controles mapeados</b>
+            </article>
+            <article>
+              <span>ISO/IEC 27001</span>
+              <h2>Segurança da informação</h2>
+              <p>
+                Menor privilégio, segregação de funções, trilha de acesso e
+                resposta a incidentes.
+              </p>
+              <b>6 controles mapeados</b>
+            </article>
+            <article>
+              <span>LGPD</span>
+              <h2>Dados pessoais</h2>
+              <p>
+                Finalidade, base legal, minimização, retenção e registro de
+                tratamento.
+              </p>
+              <b>5 dados mapeados</b>
+            </article>
+            <article>
+              <span>HITL</span>
+              <h2>Decisão humana</h2>
+              <p>
+                Pagamentos, crédito, bloqueios e mudanças de política param na
+                fila de aprovação.
+              </p>
+              <b>4 gates obrigatórios</b>
+            </article>
+          </div>
+          <div class="disclosure">
+            <b>Escopo real deste MVP</b>
+            <p>
+              Protótipo funcional para avaliação de produto e sociedade. Não é
+              instituição financeira, não abre conta, não recebe depósitos e não
+              movimenta dinheiro. Todos os dados e resultados desta tela são
+              simulados.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/scripts/cockpit.js"></script>
+  </body>
+</html>
