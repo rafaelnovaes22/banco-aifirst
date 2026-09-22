@@ -37,6 +37,16 @@ O operador deve ativar backup do serviço PostgreSQL, registrar frequência/rete
 
 Pix, tributos, reserva, risco e projeções são cenários fictícios. O parser aceita valores monetários brasileiros explícitos; valores inválidos não viram transferências padrão. Favorecidos são fixos e mostrados para revisão. Aprovar bloqueio de risco não debita o saldo. O classificador não pesquisa a internet, não determina conformidade regulatória e não suporta todas as línguas ou culturas. Não há onboarding bancário, depósito, crédito, KYC real ou licença financeira.
 
+## Modo Pages (produção atual)
+
+O site em github.io executa `sites/pages-store.ts` no navegador: mesmo
+`bank-engine`, mesma alçada de R$ 5.000 e mesmo maker-checker por papéis
+(agente cria, humano aprova). Estado e auditoria com hash encadeado ficam em
+`localStorage`, isolados por navegador. Sem Postgres, sem D1, sem multi
+sessão server, sem rate limit distribuído e sem Jev em runtime. O shim
+(`sites/pages-shim.ts`) intercepta `fetch` só em host github.io, arquivo local
+ou `?static=1`; no Railway ou localhost com backend o cockpit usa a API real.
+
 ## Fontes oficiais consultadas
 
 - [node-postgres: transações no mesmo client](https://node-postgres.com/features/transactions).

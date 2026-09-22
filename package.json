@@ -17,6 +17,7 @@
     "start": "node dist/main.js",
     "demo": "npm run build --silent && node dist/demo/run-demo.js",
     "build:sites": "npm run build --silent && node scripts/build-sites.ts",
+    "build:pages": "npm run build --silent && node scripts/build-pages.ts",
     "dev:sites": "node scripts/dev-sites.ts",
     "test:sites": "npm run typecheck:sites && node --test sites/*.test.ts",
     "typecheck:sites": "tsc -p tsconfig.sites.json"
