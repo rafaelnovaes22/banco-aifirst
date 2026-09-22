@@ -7,7 +7,7 @@ permissions:
 
 on:
   push:
-    branches: [main, pages-github-io]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
