@@ -57,4 +57,12 @@ Detalhes em [Sites](docs/SITES.md). Comandos: `npm run build:sites`, `npm run de
 
 Este projeto não é uma instituição financeira. Não abre contas, não recebe depósitos e não movimenta dinheiro. Os valores e favorecidos são fictícios.
 
-Produção: https://banco-aifirst-production.up.railway.app
+Produção: https://rafaelnovaes22.github.io/banco-aifirst/
+
+## GitHub Pages
+
+A produção é estática: `npm run build:pages` gera `dist/pages` com landing,
+cockpit e o mesmo motor do Sites executado no navegador. A sessão persiste em
+`localStorage` deste dispositivo, sem conta, sem rede e sem dinheiro real. O
+shim (`sites/pages-shim.ts`) só ativa em host github.io, arquivo local ou
+`?static=1`; fora dali o cockpit fala com o Fastify normalmente.

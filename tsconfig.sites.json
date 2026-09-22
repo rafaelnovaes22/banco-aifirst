@@ -12,5 +12,10 @@
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["sites/**/*.ts", "scripts/build-sites.ts", "scripts/dev-sites.ts"]
+  "include": [
+    "sites/**/*.ts",
+    "scripts/build-sites.ts",
+    "scripts/build-pages.ts",
+    "scripts/dev-sites.ts"
+  ]
 }
