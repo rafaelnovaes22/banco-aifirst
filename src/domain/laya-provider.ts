@@ -44,8 +44,15 @@ export interface LayaNoulPair {
 
 function sanitizeState(raw: string): string {
   if (!raw) return "";
-  const clean = raw
-    .replace(/[\x00-\x1F\x7F-\x9F]/g, "")
+  // PORQUÊ: filtro por codepoint em vez de classe regex com controles,
+  // que o lint no-control-regex barra. Mesmo comportamento do sanitize
+  // de jev-intent-check.ts.
+  const clean = [...raw]
+    .filter((ch) => {
+      const code = ch.codePointAt(0) ?? 32;
+      return (code >= 32 && code < 127) || code >= 160;
+    })
+    .join("")
     .replace(/\s+/g, " ")
     .trim();
   if (clean.length <= LAYA_MAX_STATE_CHARS) return clean;
