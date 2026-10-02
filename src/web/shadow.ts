@@ -27,6 +27,8 @@ interface ShadowResponse {
   readonly linhasDre: readonly ShadowLinha[];
 }
 
+let ultimoRelatorio: ShadowResponse | null = null;
+
 const SAMPLE_CSV = [
   "id;data;descricao;valor;direcao",
   "m1;2026-09-01;TED cliente Alfa;1.500,00;IN",
@@ -63,6 +65,8 @@ function setShadowBusy(busy: boolean): void {
   byId<HTMLInputElement>("shadow-csv-file").disabled = busy;
   byId<HTMLInputElement>("shadow-json-file").disabled = busy;
   byId<HTMLButtonElement>("shadow-submit").disabled = busy;
+  byId<HTMLButtonElement>("shadow-export").disabled =
+    busy || ultimoRelatorio === null;
   byId<HTMLButtonElement>("shadow-submit").textContent = busy
     ? "Calculando..."
     : "Rodar piloto shadow";
@@ -105,6 +109,7 @@ async function fillFromFile(
 }
 
 function renderShadowResult(result: ShadowResponse): void {
+  ultimoRelatorio = result;
   const taxa = `${(result.taxaAutoBaixa * 100).toFixed(1)}%`;
   const economia = moneyFormatter.format(result.economiaMensalEmCentavos / 100);
   const linhas = result.linhasDre
@@ -128,6 +133,7 @@ function renderShadowResult(result: ShadowResponse): void {
     textElement("p", result.textoResumoDre),
     textElement("p", linhas || "Sem linhas de DRE."),
   );
+  byId<HTMLButtonElement>("shadow-export").disabled = false;
 }
 
 function renderShadowFailure(message: string): void {
@@ -180,6 +186,53 @@ async function submitShadow(): Promise<void> {
   }
 }
 
+// PORQUÊ: o cliente leva o número para casa. CSV com ponto e vírgula abre
+// direto no Excel BR; BOM garante acento. Célula com =+-@ ganha apóstrofo.
+function celulaCsv(valor: string | number): string {
+  const texto = String(valor);
+  const seguro = /^[=+\-@]/.test(texto) ? `'${texto}` : texto;
+  return `"${seguro.replace(/"/g, '""')}"`;
+}
+
+function relatorioCsv(result: ShadowResponse): string {
+  const resumo = [
+    "secao;metrica;valor",
+    `resumo;total_extrato;${result.totalExtrato}`,
+    `resumo;baixas_automaticas;${result.unicas}`,
+    `resumo;ambiguas_para_humano;${result.ambiguas}`,
+    `resumo;sem_match;${result.semMatch}`,
+    `resumo;taxa_auto_baixa_pct;${(result.taxaAutoBaixa * 100).toFixed(1)}`,
+    `resumo;horas_economizadas_mes;${result.horasEconomizadasMes.toFixed(0)}`,
+    `resumo;economia_mensal_centavos;${result.economiaMensalEmCentavos}`,
+    "",
+    "secao;categoria;entradas_centavos;saidas_centavos",
+    ...result.linhasDre.map(
+      (linha) =>
+        `dre;${celulaCsv(linha.categoria)};${linha.entradasEmCentavos};${linha.saidasEmCentavos}`,
+    ),
+  ];
+  return `\uFEFF${resumo.join("\n")}`;
+}
+
+function exportarCsv(): void {
+  if (!ultimoRelatorio) {
+    renderShadowFailure("Rode o piloto shadow antes de exportar.");
+    return;
+  }
+  const blob = new Blob([relatorioCsv(ultimoRelatorio)], {
+    type: "text/csv;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "piloto-shadow.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("Relatório CSV exportado.");
+}
+
 function bindShadow(): void {
   byId("shadow-form").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -199,6 +252,9 @@ function bindShadow(): void {
       "shadow-comprovantes",
       "Comprovantes",
     );
+  });
+  byId("shadow-export").addEventListener("click", () => {
+    exportarCsv();
   });
 }
 
