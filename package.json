@@ -16,6 +16,7 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.{ts,mjs}\" \"evals/**/*.mjs\" \"styles/**/*.css\" \"app.html\" \"*.{json,ts,mjs,md}\"",
     "start": "node dist/main.js",
     "demo": "npm run build --silent && node dist/demo/run-demo.js",
+    "piloto:shadow": "npm run build --silent && node dist/demo/run-piloto-shadow.js",
     "build:sites": "npm run build --silent && node scripts/build-sites.ts",
     "build:pages": "npm run build --silent && node scripts/build-pages.ts",
     "dev:sites": "node scripts/dev-sites.ts",

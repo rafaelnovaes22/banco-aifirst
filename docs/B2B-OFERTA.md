@@ -22,3 +22,11 @@ Critério: acima de 95 por cento de acerto em 500 a 1000 movimentos.
 ## Operação Novais
 
 Site com demo Pages. Pool de 4 a 6 PJs de confiança alocados por hora. Contrato setup mais mensalidade por volume conciliado.
+
+## Como rodar o piloto shadow
+
+```powershell
+npm run piloto:shadow -- demo-data-extrato.csv --comprovantes demo-data-comprovantes.json --org "Banco Piloto"
+```
+
+Sem `--comprovantes`, a taxa de baixa sai zerada e o DRE continua válido. Falha sem CSV, com uso esperado em JSON no stderr.
