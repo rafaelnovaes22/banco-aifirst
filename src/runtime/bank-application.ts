@@ -14,6 +14,19 @@ import { toCockpitView } from "./demo-state.js";
 import type { BankRepository } from "./repository.js";
 import { RuntimeError } from "./runtime-error.js";
 import {
+  executarConciliacao,
+  type ConciliacaoResumo,
+} from "../b2b/conciliacao.js";
+import { executarDreContinuo, type DreResumo } from "../b2b/dre.js";
+import { executarPilotoShadow } from "../b2b/piloto-shadow.js";
+import type { ShadowPremissas } from "../b2b/piloto-shadow.js";
+import {
+  MemoriaExtratoProvider,
+  parseCsvExtrato,
+  type B2bExtratoMovement,
+} from "../b2b/extrato-provider.js";
+import type { ReceiptExtraction } from "../domain/receipt-extraction.js";
+import {
   createOpaqueToken,
   hashOpaqueToken,
   sessionExpiry,
@@ -29,6 +42,25 @@ export interface AuditView {
   readonly records: readonly AuditRecord[];
   readonly integrity: "VERIFIED" | "COMPROMISED";
 }
+
+export interface PilotoShadowInput {
+  readonly csv: string;
+  readonly extracoes: readonly ReceiptExtraction[];
+  readonly premissas: ShadowPremissas;
+  readonly nomeOrgao: string;
+}
+
+export interface PilotoShadowRelatorio {
+  readonly totalExtrato: number;
+  readonly resumo: ConciliacaoResumo;
+  readonly linhasDre: DreResumo["linhas"];
+  readonly taxaAutoBaixa: number;
+  readonly horasEconomizadasMes: number;
+  readonly economiaMensalEmCentavos: number;
+  readonly textoResumoDre: string;
+}
+
+const SHADOW_MOVIMENTOS_MAX = 2_000;
 
 export class BankApplication {
   public constructor(private readonly repository: BankRepository) {}
@@ -148,6 +180,43 @@ export class BankApplication {
       ...rows,
     ].join("\n")}`;
   }
+
+  // PORQUÊ: shadow em leitura no backend: mesmo cálculo do Pages e do CLI,
+  // sem mover dinheiro e sem encostar no ledger. A trilha desta chamada vai
+  // para o log estruturado, não para a cadeia com hash (só mutação entra lá).
+  public async pilotoShadow(
+    input: PilotoShadowInput,
+  ): Promise<PilotoShadowRelatorio> {
+    const provider = new MemoriaExtratoProvider(shadowMovimentos(input.csv));
+    const { resumo } = await executarConciliacao(provider, input.extracoes, []);
+    const dre = await executarDreContinuo(provider, input.nomeOrgao);
+    const relatorio = await executarPilotoShadow(
+      provider,
+      input.extracoes,
+      input.premissas,
+      input.nomeOrgao,
+    );
+    return {
+      totalExtrato: resumo.totalExtrato,
+      resumo,
+      linhasDre: dre.linhas,
+      taxaAutoBaixa: relatorio.taxaAutoBaixa,
+      horasEconomizadasMes: relatorio.horasEconomizadasMes,
+      economiaMensalEmCentavos: relatorio.economiaMensalEmCentavos,
+      textoResumoDre: relatorio.textoResumoDre,
+    };
+  }
+}
+
+function shadowMovimentos(csv: string): readonly B2bExtratoMovement[] {
+  const movimentos = parseCsvExtrato(csv);
+  if (movimentos.length === 0 || movimentos.length > SHADOW_MOVIMENTOS_MAX)
+    throw new RuntimeError(
+      422,
+      "INVALID_EXTRATO",
+      `Extrato sem movimento válido: recebidos ${movimentos.length}.`,
+    );
+  return movimentos;
 }
 
 function recordToCsv(record: AuditRecord): string {

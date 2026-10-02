@@ -176,6 +176,69 @@ describe("API persistente do Banco AI First", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: "ok", database: "reachable" });
   });
+
+  it("calcula o piloto shadow autenticado", async () => {
+    const session = await startSession();
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/b2b-shadow",
+      headers: actionHeaders(session, "shadow-0001"),
+      payload: {
+        csv: [
+          "id;data;descricao;valor;direcao",
+          "m1;2026-09-01;TED cliente Alfa;1.500,00;IN",
+          "m2;2026-09-02;Pix cliente Beta;200,00;IN",
+          "m3;2026-09-03;Tarifa manutencao;10,00;OUT",
+          "m4;2026-09-04;TED fornecedor Gama;800,00;OUT",
+        ].join("\n"),
+        comprovantes: [
+          { amountInCents: 150000, occurredOn: "2026-09-01" },
+          { amountInCents: 20000, occurredOn: "2026-09-02" },
+        ],
+      },
+    });
+    const relatorio = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(relatorio.totalExtrato).toBe(4);
+    expect(relatorio.unicas).toBe(2);
+    expect(relatorio.taxaAutoBaixa).toBe(0.5);
+    expect(relatorio.economiaMensalEmCentavos).toBeGreaterThan(0);
+    expect(relatorio.linhasDre.length).toBeGreaterThan(0);
+    expect(relatorio.textoResumoDre).toContain("R$");
+  });
+
+  it("não calcula shadow sem sessão", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/b2b-shadow",
+      payload: { csv: "id;data;descricao;valor" },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe("SESSION_REQUIRED");
+  });
+
+  it("rejeita extrato fora do contrato", async () => {
+    const session = await startSession();
+    const vazio = await app.inject({
+      method: "POST",
+      url: "/api/v1/b2b-shadow",
+      headers: actionHeaders(session, "shadow-0002"),
+      payload: {},
+    });
+    const semMovimento = await app.inject({
+      method: "POST",
+      url: "/api/v1/b2b-shadow",
+      headers: actionHeaders(session, "shadow-0003"),
+      payload: { csv: "nada aqui" },
+    });
+
+    expect(vazio.statusCode).toBe(400);
+    expect(vazio.json().error.code).toBe("INVALID_BODY");
+    expect(semMovimento.statusCode).toBe(422);
+    expect(semMovimento.json().error.code).toBe("INVALID_EXTRATO");
+  });
 });
 
 function actionHeaders(
