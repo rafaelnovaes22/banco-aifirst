@@ -33,12 +33,19 @@ const SAMPLE_CSV = [
   "m2;2026-09-02;Pix cliente Beta;200,00;IN",
   "m3;2026-09-03;Tarifa manutencao;10,00;OUT",
   "m4;2026-09-04;TED fornecedor Gama;800,00;OUT",
+  "m5;2026-09-05;Pix cliente Delta;350,00;IN",
+  "m6;2026-09-06;Boleto energia;180,00;OUT",
+  "m7;2026-09-08;TED cliente Epsilon;2.200,00;IN",
+  "m8;2026-09-09;Pix reembolso;95,50;IN",
 ].join("\n");
 
 const SAMPLE_COMPROVANTES = JSON.stringify(
   [
     { amountInCents: 150000, occurredOn: "2026-09-01" },
     { amountInCents: 20000, occurredOn: "2026-09-02" },
+    { amountInCents: 35000, occurredOn: "2026-09-05" },
+    { amountInCents: 220000, occurredOn: "2026-09-08" },
+    { amountInCents: 9550, occurredOn: "2026-09-09" },
   ],
   null,
   2,
