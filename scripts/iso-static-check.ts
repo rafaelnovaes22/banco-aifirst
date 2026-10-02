@@ -72,7 +72,7 @@ const html: string = readFileSync(htmlPath, "utf8");
 {
   if (!/<title>[^<]{10,}<\/title>/.test(html)) issues.push({ file: "index.html", problem: "title ausente ou curto", fix: "declarar outcome no title" });
   if (!/href="app\.html"/.test(html)) issues.push({ file: "index.html", problem: "sem acesso ao MVP", fix: "adicionar CTA para app.html" });
-  if (!/não é instituição financeira/i.test(html)) issues.push({ file: "index.html", problem: "disclosure regulatório ausente", fix: "declarar que o MVP não é instituição financeira" });
+  if (!/não é instituição\s+financeira/i.test(html)) issues.push({ file: "index.html", problem: "disclosure regulatório ausente", fix: "declarar que o MVP não é instituição financeira" });
   const appPath: string = join(root, "app.html");
   if (!existsSync(appPath)) issues.push({ file: "app.html", problem: "cockpit ausente", fix: "criar experiência demonstrativa" });
 }
