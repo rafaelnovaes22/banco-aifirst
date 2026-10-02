@@ -12,6 +12,7 @@ import {
   pagesCommand,
   pagesDecision,
   pagesGovernance,
+  pagesShadow,
   parsePagesStore,
   requirePagesCsrf,
   serializePagesStore,
@@ -130,6 +131,11 @@ async function writePagesRoute(
   const key = request.headers.get("idempotency-key");
   if (path === "/api/v1/commands") {
     const payload = await pagesCommand(store, body, key, now);
+    persistPagesStore(store);
+    return Response.json(payload, { status: 200 });
+  }
+  if (path === "/api/v1/b2b-shadow") {
+    const payload = await pagesShadow(store, body, now);
     persistPagesStore(store);
     return Response.json(payload, { status: 200 });
   }

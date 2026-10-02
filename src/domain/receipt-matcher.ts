@@ -38,5 +38,51 @@ export function matchReceiptToTransactions(
       kind: "AMBIGUOUS",
       transactionIds: candidates.map((candidate) => candidate.id),
     };
-  return { kind: "UNIQUE", transactionId: candidates[0].id };
+  const only = candidates[0];
+  if (!only) return { kind: "NO_MATCH" };
+  return { kind: "UNIQUE", transactionId: only.id };
+}
+
+export interface BaixaUnica {
+  readonly transactionId: string;
+  readonly amountInCents: number;
+}
+
+export interface LoteClassificado {
+  readonly unicas: number;
+  readonly semMatch: number;
+  readonly idsAmbiguos: readonly string[];
+  readonly baixasUnicas: readonly BaixaUnica[];
+}
+
+// PORQUÊ: lote puro sem cadeia: o Node anexa trilha com hash, o navegador usa
+// a trilha do pages-store. Valor e data decidem nos dois, sem duplicar regra.
+export function classificarLote(
+  extracoes: readonly ReceiptExtraction[],
+  espelhos: readonly TransactionMirror[],
+): LoteClassificado {
+  let unicas = 0;
+  let semMatch = 0;
+  const ambiguos: string[] = [];
+  const baixasUnicas: BaixaUnica[] = [];
+  for (const extracao of extracoes) {
+    const match = matchReceiptToTransactions(extracao, espelhos);
+    if (match.kind === "UNIQUE") {
+      unicas += 1;
+      baixasUnicas.push({
+        transactionId: match.transactionId,
+        amountInCents: extracao.amountInCents,
+      });
+    } else if (match.kind === "AMBIGUOUS") {
+      ambiguos.push(...match.transactionIds);
+    } else {
+      semMatch += 1;
+    }
+  }
+  return {
+    unicas,
+    semMatch,
+    idsAmbiguos: [...new Set(ambiguos)],
+    baixasUnicas,
+  };
 }

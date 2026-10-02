@@ -56,13 +56,16 @@ check("cockpit", () => {
 check("assets", () => {
   const refs = localReferences(`${landing}\n${cockpit}`);
   for (const reference of refs) {
-    const relative =
-      reference === "/scripts/cockpit.js"
-        ? "dist/web/cockpit.js"
-        : reference.replace(/^\//, "");
+    const relative = compiledScript(reference) ?? reference.replace(/^\//, "");
     expect(existsSync(join(root, relative)), `arquivo ausente: ${reference}`);
   }
 });
+
+function compiledScript(reference) {
+  if (reference === "/scripts/cockpit.js") return "dist/web/cockpit.js";
+  if (reference === "/scripts/shadow.js") return "dist/web/shadow.js";
+  return null;
+}
 
 check("performance", () => {
   expect(

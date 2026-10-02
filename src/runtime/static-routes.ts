@@ -51,6 +51,13 @@ async function loadStaticAssets(
     false,
     "/scripts/cockpit.js",
   );
+  await addFile(
+    assets,
+    root,
+    join("dist", "web", "shadow.js"),
+    false,
+    "/scripts/shadow.js",
+  );
   return assets;
 }
 

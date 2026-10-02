@@ -1,5 +1,5 @@
 // PORQUÊ: o servidor é a fonte de verdade; o navegador só renderiza snapshots persistidos.
-type ViewName = "cockpit" | "agents" | "audit" | "governance";
+type ViewName = "cockpit" | "agents" | "audit" | "governance" | "conciliacao";
 type Decision = "APPROVE" | "REJECT";
 type SessionResponse = { csrfToken: string };
 // prettier-ignore
@@ -19,7 +19,7 @@ type AuditResponse = {
 type ErrorPayload = { error?: { message?: string } };
 
 // prettier-ignore
-const moneyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 });
+export const moneyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 });
 // prettier-ignore
 const timeFormatter = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
 let csrfToken = "";
@@ -56,7 +56,7 @@ function mutationHeaders(): Headers {
   return headers;
 }
 
-async function mutateJson<T>(path: string, body: unknown): Promise<T> {
+export async function mutateJson<T>(path: string, body: unknown): Promise<T> {
   // prettier-ignore
   return requestJson<T>(path, { method: "POST", headers: mutationHeaders(), body: JSON.stringify(body) });
 }
@@ -74,7 +74,7 @@ function formatMoment(value: string): string {
   return `Atualizado às ${timeFormatter.format(parsed)}`;
 }
 
-function failureMessage(error: unknown): string {
+export function failureMessage(error: unknown): string {
   if (!(error instanceof ApiRequestError))
     return "Falha de conexão. Verifique a rede e tente novamente.";
   if (error.status === 401) return "A sessão expirou. Reconecte o ambiente.";
@@ -148,7 +148,7 @@ function renderMetrics(cockpit: CockpitResponse): void {
   renderRisk(cockpit.risk);
 }
 
-function textElement(
+export function textElement(
   tag: keyof HTMLElementTagNameMap,
   text: string,
   className = "",
@@ -234,7 +234,7 @@ function setCommandBusy(busy: boolean): void {
   byId("command-submit").textContent = label;
 }
 
-function showToast(message: string): void {
+export function showToast(message: string): void {
   const toast = byId("toast");
   toast.textContent = message;
   toast.classList.add("show");
