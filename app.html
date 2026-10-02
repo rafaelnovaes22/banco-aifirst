@@ -452,6 +452,20 @@
                 id="shadow-comprovantes"
                 placeholder="Comprovantes em JSON (opcional)"
               ></textarea>
+              <div class="file-row" aria-label="Enviar arquivos do cliente">
+                <label class="file-field" for="shadow-csv-file"
+                  >Extrato em CSV<input
+                    id="shadow-csv-file"
+                    type="file"
+                    accept=".csv,text/csv"
+                /></label>
+                <label class="file-field" for="shadow-json-file"
+                  >Comprovantes em JSON<input
+                    id="shadow-json-file"
+                    type="file"
+                    accept=".json,application/json"
+                /></label>
+              </div>
               <div class="command-foot">
                 <button class="outline-button" id="shadow-sample" type="button">
                   Usar demonstrativo
