@@ -21,21 +21,26 @@ async function copyStatic(): Promise<void> {
       await cp(join(ROOT, dir), join(OUT, dir), { recursive: true });
     }
   }
-  await cp(join(ROOT, "dist", "web", "cockpit.js"), join(SCRIPTS, "cockpit.js"));
+  await cp(
+    join(ROOT, "dist", "web", "cockpit.js"),
+    join(SCRIPTS, "cockpit.js"),
+  );
   await cp(join(ROOT, "dist", "web", "shadow.js"), join(SCRIPTS, "shadow.js"));
 }
 
 async function patchAppHtml(): Promise<void> {
   const path = join(OUT, "app.html");
   const html = await readFile(path, "utf8");
-  const original =
-    '<script type="module" src="/scripts/cockpit.js"></script>\n    <script type="module" src="/scripts/shadow.js"></script>';
-  if (!html.includes(original)) {
-    throw new Error("app.html sem tags dos scripts; esperado scripts absolutos.");
+  const pattern =
+    /<script type="module" src="\/scripts\/cockpit\.js"><\/script>\r?\n {4}<script type="module" src="\/scripts\/shadow\.js"><\/script>/;
+  if (!pattern.test(html)) {
+    throw new Error(
+      "app.html sem tags dos scripts; esperado scripts absolutos.",
+    );
   }
   const patched =
     '<script src="./scripts/pages-shim.js"></script>\n    <script type="module" src="./scripts/cockpit.js"></script>\n    <script type="module" src="./scripts/shadow.js"></script>';
-  await writeFile(path, html.replace(original, patched));
+  await writeFile(path, html.replace(pattern, patched));
 }
 
 async function bundleShim(): Promise<void> {
@@ -59,4 +64,9 @@ await copyStatic();
 await bundleShim();
 await patchAppHtml();
 await writeFile(join(OUT, ".nojekyll"), "");
-console.log(JSON.stringify({ event: "pages_build_complete", files: await countFiles(OUT) }));
+console.log(
+  JSON.stringify({
+    event: "pages_build_complete",
+    files: await countFiles(OUT),
+  }),
+);
