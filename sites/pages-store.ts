@@ -4,6 +4,7 @@
 // Nenhum dinheiro real, nenhuma rede, nenhuma chave fora do dispositivo.
 import { auditStatus } from "./audit.ts";
 import { decideBankApproval, runBankCommand } from "./bank-engine.ts";
+import { executarShadowNavegador } from "./b2b-shadow.ts";
 import { createDemoBankState, toCockpitView } from "./bank-state.ts";
 import { identifier, sha256, stableJson } from "./crypto.ts";
 import { governance } from "./governance.ts";
@@ -139,6 +140,38 @@ export async function pagesDecision(
     return { blocked: true, payload: outcome.value as unknown as Record<string, unknown> };
   }
   return { blocked: false, payload: outcome.value as unknown as Record<string, unknown> };
+}
+
+export async function pagesShadow(
+  store: PagesStore,
+  body: Record<string, unknown>,
+  now: Date,
+): Promise<Record<string, unknown>> {
+  requirePagesSession(store, now);
+  exactFields(body, ["csv", "comprovantes", "premissas", "org"], ["csv"]);
+  const relatorio = executarShadowNavegador({
+    csv: body["csv"],
+    comprovantes: body["comprovantes"],
+    premissas: body["premissas"],
+    org: body["org"],
+  });
+  await appendPagesAudits(
+    store,
+    [
+      {
+        agent: "Conciliador",
+        action: "PILOTO_SHADOW",
+        resourceId: "b2b-shadow",
+        payload: {
+          taxaAutoBaixa: relatorio.taxaAutoBaixa,
+          totalExtrato: relatorio.totalExtrato,
+        },
+      },
+    ],
+    now,
+  );
+  assertPagesLimits(store);
+  return relatorio as unknown as Record<string, unknown>;
 }
 
 export function pagesCockpit(store: PagesStore, now: Date): Record<string, unknown> {

@@ -22,17 +22,19 @@ async function copyStatic(): Promise<void> {
     }
   }
   await cp(join(ROOT, "dist", "web", "cockpit.js"), join(SCRIPTS, "cockpit.js"));
+  await cp(join(ROOT, "dist", "web", "shadow.js"), join(SCRIPTS, "shadow.js"));
 }
 
 async function patchAppHtml(): Promise<void> {
   const path = join(OUT, "app.html");
   const html = await readFile(path, "utf8");
-  const original = '<script type="module" src="/scripts/cockpit.js"></script>';
+  const original =
+    '<script type="module" src="/scripts/cockpit.js"></script>\n    <script type="module" src="/scripts/shadow.js"></script>';
   if (!html.includes(original)) {
-    throw new Error("app.html sem tag do cockpit; esperado script absoluto.");
+    throw new Error("app.html sem tags dos scripts; esperado scripts absolutos.");
   }
   const patched =
-    '<script src="./scripts/pages-shim.js"></script>\n    <script type="module" src="./scripts/cockpit.js"></script>';
+    '<script src="./scripts/pages-shim.js"></script>\n    <script type="module" src="./scripts/cockpit.js"></script>\n    <script type="module" src="./scripts/shadow.js"></script>';
   await writeFile(path, html.replace(original, patched));
 }
 

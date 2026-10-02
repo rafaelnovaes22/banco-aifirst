@@ -60,8 +60,11 @@ export function parseCsvExtrato(csv: string): readonly B2bExtratoMovement[] {
 }
 
 export class CsvExtratoProvider implements ExtratoProvider {
-  constructor(private readonly csv: string) {
+  private readonly csv: string;
+
+  constructor(csv: string) {
     if (!csv.trim()) throw new Error("csv do extrato não pode ficar vazio");
+    this.csv = csv;
   }
 
   async listarMovimentos(): Promise<readonly B2bExtratoMovement[]> {
@@ -70,7 +73,11 @@ export class CsvExtratoProvider implements ExtratoProvider {
 }
 
 export class MemoriaExtratoProvider implements ExtratoProvider {
-  constructor(private readonly movimentos: readonly B2bExtratoMovement[]) {}
+  private readonly movimentos: readonly B2bExtratoMovement[];
+
+  constructor(movimentos: readonly B2bExtratoMovement[]) {
+    this.movimentos = movimentos;
+  }
 
   async listarMovimentos(): Promise<readonly B2bExtratoMovement[]> {
     return this.movimentos;

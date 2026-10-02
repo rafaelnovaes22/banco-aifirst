@@ -2,8 +2,8 @@
 // Regra herdada do motor: valor e data valem, texto nunca decide. Ambíguo sobe.
 import type { ReceiptExtraction } from "../domain/receipt-extraction.js";
 import {
+  classificarLote,
   type TransactionMirror,
-  matchReceiptToTransactions,
 } from "../domain/receipt-matcher.js";
 import { appendAuditEvent, type AuditEvent } from "../domain/audit-ledger.js";
 import type {
@@ -58,38 +58,27 @@ function conciliarLote(
   total: number,
   trilha: readonly AuditEvent[],
 ): { resumo: ConciliacaoResumo; trilha: readonly AuditEvent[] } {
-  let unicas = 0;
-  const idsAmbiguos: string[] = [];
-  let semMatch = 0;
+  const lote = classificarLote(extracoes, espelhos);
   let cadeia: readonly AuditEvent[] = trilha;
-  for (const extracao of extracoes) {
-    const match = matchReceiptToTransactions(extracao, espelhos);
-    if (match.kind === "UNIQUE") {
-      unicas += 1;
-      cadeia = [
-        ...cadeia,
-        appendAuditEvent(cadeia, {
-          actorId: "b2b-conciliacao",
-          action: "baixa_conciliada",
-          objectId: match.transactionId,
-          channel: "SYSTEM",
-          payloadJson: JSON.stringify({ valor: extracao.amountInCents }),
-        }),
-      ];
-    } else if (match.kind === "AMBIGUOUS") {
-      idsAmbiguos.push(...match.transactionIds);
-    } else {
-      semMatch += 1;
-    }
+  for (const baixa of lote.baixasUnicas) {
+    cadeia = [
+      ...cadeia,
+      appendAuditEvent(cadeia, {
+        actorId: "b2b-conciliacao",
+        action: "baixa_conciliada",
+        objectId: baixa.transactionId,
+        channel: "SYSTEM",
+        payloadJson: JSON.stringify({ valor: baixa.amountInCents }),
+      }),
+    ];
   }
-  const ambiguas = new Set(idsAmbiguos).size;
   return {
     resumo: {
       totalExtrato: total,
-      unicas,
-      ambiguas,
-      semMatch,
-      idsAmbiguos: [...new Set(idsAmbiguos)],
+      unicas: lote.unicas,
+      ambiguas: lote.idsAmbiguos.length,
+      semMatch: lote.semMatch,
+      idsAmbiguos: lote.idsAmbiguos,
     },
     trilha: cadeia,
   };

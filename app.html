@@ -40,6 +40,9 @@
           <button class="nav-item" data-view="governance">
             <span>04</span>Governança
           </button>
+          <button class="nav-item" data-view="conciliacao">
+            <span>05</span>Conciliação
+          </button>
         </nav>
         <div class="sidebar-foot">
           <span class="status-dot is-loading" id="system-status-dot"></span>
@@ -418,10 +421,59 @@
             </p>
           </div>
         </section>
+
+        <section
+          class="view"
+          id="view-conciliacao"
+          aria-labelledby="conciliacao-title"
+        >
+          <div class="view-head">
+            <div>
+              <p class="eyebrow">PILOTO SHADOW B2B</p>
+              <h1 id="conciliacao-title">Conciliação sem tocar em dinheiro</h1>
+            </div>
+            <p class="view-note">
+              Leitura do extrato<br />Baixa automática com trilha
+            </p>
+          </div>
+          <section class="ai-command" aria-labelledby="shadow-form-title">
+            <p class="eyebrow">EXTRATO DO CORE</p>
+            <h2 id="shadow-form-title">Cole o CSV, receba taxa e economia</h2>
+            <form id="shadow-form">
+              <label class="sr-only" for="shadow-csv">CSV do extrato</label>
+              <textarea
+                id="shadow-csv"
+                placeholder="id;data;descricao;valor;direcao"
+              ></textarea>
+              <label class="sr-only" for="shadow-comprovantes"
+                >Comprovantes em JSON</label
+              >
+              <textarea
+                id="shadow-comprovantes"
+                placeholder="Comprovantes em JSON (opcional)"
+              ></textarea>
+              <div class="command-foot">
+                <button class="outline-button" id="shadow-sample" type="button">
+                  Usar demonstrativo
+                </button>
+                <button id="shadow-submit" type="submit">
+                  Rodar piloto shadow
+                </button>
+              </div>
+            </form>
+            <div class="agent-response" id="shadow-result" aria-live="polite">
+              <span class="response-label">PILOTO SHADOW</span>
+              <p>
+                Sem cálculo ainda. O relatório sai em leitura, sem mover nada.
+              </p>
+            </div>
+          </section>
+        </section>
       </main>
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script type="module" src="/scripts/cockpit.js"></script>
+    <script type="module" src="/scripts/shadow.js"></script>
   </body>
 </html>
