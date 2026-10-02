@@ -1,6 +1,6 @@
-# Fluxo OS, Banco AI First
+# Novais Digital, agentes de IA para o backoffice
 
-Sandbox operacional de um banco empresarial orientado por agentes. O cockpit aceita comandos em linguagem natural, prepara ações financeiras, exige decisão humana, persiste o estado e produz auditoria verificável.
+Consultoria em operações com IA: agentes que assumem conciliação, DRE e rotinas repetitivas. O piloto shadow roda com os arquivos do cliente, prova a economia e devolve o relatório, sem tocar em dinheiro.
 
 ## O que funciona
 

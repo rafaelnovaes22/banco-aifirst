@@ -38,8 +38,11 @@ function expect(condition, message) {
 }
 
 check("landing", () => {
-  expect(landing.includes("<!DOCTYPE html>"), "doctype ausente");
-  expect(landing.includes("MVP DO BANCO AI FIRST"), "proposta ausente");
+  expect(/<!doctype html>/i.test(landing), "doctype ausente");
+  expect(
+    landing.includes("CONSULTORIA EM OPERAÇÕES COM IA"),
+    "proposta ausente",
+  );
   expect(landing.includes('href="app.html"'), "CTA do cockpit ausente");
 });
 

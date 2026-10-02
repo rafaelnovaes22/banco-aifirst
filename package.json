@@ -1,7 +1,7 @@
 {
   "name": "banco-aifirst",
   "version": "0.1.0",
-  "description": "Banco AI First em sandbox operacional: agentes sugerem, regras decidem e humanos aprovam.",
+  "description": "Novais Digital: agentes de IA que assumem conciliação, DRE e rotinas de backoffice, com piloto shadow e aprovação humana.",
   "type": "module",
   "scripts": {
     "test": "vitest run && node tests/bank-core.test.mjs",
