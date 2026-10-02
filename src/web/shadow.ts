@@ -60,10 +60,48 @@ function byId<T extends HTMLElement>(id: string): T {
 function setShadowBusy(busy: boolean): void {
   byId<HTMLTextAreaElement>("shadow-csv").disabled = busy;
   byId<HTMLTextAreaElement>("shadow-comprovantes").disabled = busy;
+  byId<HTMLInputElement>("shadow-csv-file").disabled = busy;
+  byId<HTMLInputElement>("shadow-json-file").disabled = busy;
   byId<HTMLButtonElement>("shadow-submit").disabled = busy;
   byId<HTMLButtonElement>("shadow-submit").textContent = busy
     ? "Calculando..."
     : "Rodar piloto shadow";
+}
+
+// PORQUÊ: arquivo do cliente nunca sai do navegador sem passar pela mesma
+// validação do backend. Limite de 20 mil caracteres espelha o shadowSchema.
+async function readClientFile(file: File, what: string): Promise<string> {
+  if (file.size > 100_000)
+    throw new Error(`${what} grande demais: máximo 100 KB.`);
+  const text = await file.text();
+  if (!text.trim())
+    throw new Error(`${what} vazio: escolha um arquivo válido.`);
+  if (text.length > 20_000)
+    throw new Error(`${what} grande demais: máximo 20 mil caracteres.`);
+  return text;
+}
+
+async function fillFromFile(
+  inputId: string,
+  targetId: string,
+  what: string,
+): Promise<void> {
+  const picker = byId<HTMLInputElement>(inputId);
+  const file = picker.files?.[0];
+  if (!file) return;
+  setShadowBusy(true);
+  try {
+    byId<HTMLTextAreaElement>(targetId).value = await readClientFile(
+      file,
+      what,
+    );
+    showToast(`${what} carregado. Confira e rode o piloto.`);
+  } catch (error) {
+    renderShadowFailure(error instanceof Error ? error.message : String(error));
+  } finally {
+    picker.value = "";
+    setShadowBusy(false);
+  }
 }
 
 function renderShadowResult(result: ShadowResponse): void {
@@ -151,6 +189,16 @@ function bindShadow(): void {
     byId<HTMLTextAreaElement>("shadow-csv").value = SAMPLE_CSV;
     byId<HTMLTextAreaElement>("shadow-comprovantes").value =
       SAMPLE_COMPROVANTES;
+  });
+  byId("shadow-csv-file").addEventListener("change", () => {
+    void fillFromFile("shadow-csv-file", "shadow-csv", "Extrato");
+  });
+  byId("shadow-json-file").addEventListener("change", () => {
+    void fillFromFile(
+      "shadow-json-file",
+      "shadow-comprovantes",
+      "Comprovantes",
+    );
   });
 }
 
