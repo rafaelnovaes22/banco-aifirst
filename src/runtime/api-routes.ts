@@ -30,6 +30,27 @@ const decisionSchema = z
     expectedVersion: z.number().int().positive(),
   })
   .strict();
+const comprovanteSchema = z
+  .object({
+    amountInCents: z.number().int().positive(),
+    occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })
+  .strict();
+const premissasSchema = z
+  .object({
+    minutosPorMovimentoManual: z.number().positive(),
+    custoHoraEmCentavos: z.number().int().positive(),
+    movimentosPorMes: z.number().int().positive(),
+  })
+  .strict();
+const shadowSchema = z
+  .object({
+    csv: z.string().min(1).max(20_000),
+    comprovantes: z.array(comprovanteSchema).max(2_000).optional(),
+    premissas: premissasSchema.optional(),
+    org: z.string().min(1).max(80).optional(),
+  })
+  .strict();
 const idempotencyPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 
 export function registerApiRoutes(
@@ -70,6 +91,11 @@ export function registerApiRoutes(
     "/api/v1/audit/export",
     { preHandler: authenticate },
     async (request, reply) => exportAudit(request, reply, bank),
+  );
+  app.post(
+    "/api/v1/b2b-shadow",
+    { preHandler: [authenticate, authorizeMutation] },
+    async (request) => shadowReport(request, bank),
   );
 }
 
@@ -152,6 +178,42 @@ async function startSession(
   );
   reply.header("Cache-Control", "no-store");
   return { csrfToken: started.csrfToken, session: started.session };
+}
+
+async function shadowReport(
+  request: FastifyRequest,
+  bank: BankApplication,
+): Promise<unknown> {
+  const body = parseBody(shadowSchema, request.body);
+  const relatorio = await bank.pilotoShadow({
+    csv: body.csv,
+    extracoes: body.comprovantes ?? [],
+    premissas: body.premissas ?? {
+      minutosPorMovimentoManual: 6,
+      custoHoraEmCentavos: 8000,
+      movimentosPorMes: 2000,
+    },
+    nomeOrgao: body.org ?? "Banco Piloto",
+  });
+  request.log.info(
+    {
+      totalExtrato: relatorio.totalExtrato,
+      taxaAutoBaixa: relatorio.taxaAutoBaixa,
+    },
+    "piloto shadow calculado",
+  );
+  return {
+    totalExtrato: relatorio.totalExtrato,
+    unicas: relatorio.resumo.unicas,
+    ambiguas: relatorio.resumo.ambiguas,
+    semMatch: relatorio.resumo.semMatch,
+    idsAmbiguos: relatorio.resumo.idsAmbiguos,
+    linhasDre: relatorio.linhasDre,
+    taxaAutoBaixa: relatorio.taxaAutoBaixa,
+    horasEconomizadasMes: relatorio.horasEconomizadasMes,
+    economiaMensalEmCentavos: relatorio.economiaMensalEmCentavos,
+    textoResumoDre: relatorio.textoResumoDre,
+  };
 }
 
 async function approvalDecision(
