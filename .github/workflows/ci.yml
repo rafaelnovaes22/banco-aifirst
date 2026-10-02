@@ -26,7 +26,7 @@ jobs:
           test -f Dockerfile || (echo "FALTA Dockerfile" && exit 1)
           test -f package-lock.json || (echo "FALTA package-lock.json" && exit 1)
           test -f src/main.ts || (echo "FALTA src/main.ts" && exit 1)
-          grep -q "<!DOCTYPE html" index.html
+          grep -qi "<!DOCTYPE html" index.html
           grep -q "<title>.*</title>" index.html
           grep -q 'lang="pt-BR"' index.html
           echo "build OK"
@@ -142,7 +142,15 @@ jobs:
     name: docker build (break before prod)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build, test-eval-smoke, iso-governance, secret-scan, application-security, postgres-integration]
+    needs:
+      [
+        build,
+        test-eval-smoke,
+        iso-governance,
+        secret-scan,
+        application-security,
+        postgres-integration,
+      ]
     steps:
       - uses: actions/checkout@v4
       - name: Build imagem (sem push)
