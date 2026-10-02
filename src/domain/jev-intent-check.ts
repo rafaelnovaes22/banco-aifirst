@@ -4,6 +4,7 @@ import {
   type AssistantIntent,
   type AssistantOutputParseResult,
 } from "./assistant-output-schema.js";
+import type { LayaNoulPair } from "./laya-provider.js";
 
 // PORQUÊ: segunda opinião calibrada sobre o intent do assistente (stub ou LLM).
 // O confidence do JSON do LLM é auto-nota sem calibração; o Jev devolve choice
@@ -231,8 +232,58 @@ export async function withJevShadowAnswer(
   redactedText: string,
   deps: JevCheckDeps,
   log: JevCheckLog,
+  laya?: LayaShadowDeps,
 ): Promise<AssistantOutputParseResult> {
   const result = await draft(redactedText);
-  if (result.ok) observeDraft(redactedText, result.intent, deps, log);
+  if (result.ok) {
+    observeDraft(redactedText, result.intent, deps, log);
+    if (laya) observeLayaDraft(redactedText, result.intent, laya, log);
+  }
   return result;
+}
+
+export interface LayaShadowDeps {
+  readonly enabled?: boolean;
+  readonly query?: (stateText: string) => Promise<LayaNoulPair | null>;
+}
+
+export type LayaRoute = "close" | "handoff" | "continue";
+
+export function routeLaya(pair: LayaNoulPair): LayaRoute {
+  if (pair.wantsHandoff >= ACT) return "handoff";
+  if (pair.wantsToClose >= ACT) return "close";
+  return "continue";
+}
+
+// PORQUÊ: coleta de calibração do provider local. Roda em paralelo ao
+// TypeSafe, loga cada observação com a rota derivada e nunca altera
+// resposta, ticket ou dinheiro. Falha em silêncio como o shadow remoto.
+export function observeLayaDraft(
+  redactedText: string,
+  draftedIntent: AssistantIntent,
+  deps: LayaShadowDeps,
+  log: JevCheckLog,
+): void {
+  if (deps.enabled !== true || !deps.query) return;
+  void deps
+    .query(redactedText)
+    .then((pair) => {
+      if (!pair) return;
+      const route = routeLaya(pair);
+      log({
+        area: "jev",
+        event: "laya_shadow",
+        mode: "shadow",
+        provider: "laya-local",
+        draftedIntent,
+        layaRoute: route,
+        layaClose: pair.wantsToClose,
+        layaHandoff: pair.wantsHandoff,
+        diverge:
+          (route !== "continue" && draftedIntent === "DESCONHECIDO") ||
+          (route === "continue" && SENSITIVE_INTENTS.has(draftedIntent)),
+        msgChars: redactedText.length,
+      });
+    })
+    .catch(() => undefined);
 }
