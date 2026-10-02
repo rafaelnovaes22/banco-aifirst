@@ -23,6 +23,8 @@ import {
   withJevShadowAnswer,
   type JevCheckDeps,
 } from "./domain/jev-intent-check.js";
+import { createLayaProvider } from "./domain/laya-provider.js";
+import { lazyLayaLoader } from "./domain/laya-loader.js";
 import type { RecurringRule } from "./domain/cash-forecast.js";
 import { ChargeBook } from "./domain/charge-book.js";
 import type { TransactionMirror } from "./domain/receipt-matcher.js";
@@ -73,6 +75,8 @@ type AppRuntimeEnv = LlmEnv & {
   readonly TYPESAFE_API_KEY?: string;
   readonly TYPESAFE_MODEL?: string;
   readonly JEV_ENABLED?: string;
+  readonly LAYA_ENABLED?: string;
+  readonly LAYA_CACHE?: string;
 };
 
 export function createAppContext(
@@ -139,9 +143,27 @@ export async function registerAllRoutes(
     model: env.TYPESAFE_MODEL,
     enabled: env.JEV_ENABLED === "true",
   };
+  // PORQUÊ: shadow local opcional (Laya via ONNX). Sem pacote instalado ou
+  // sem LAYA_ENABLED, o provider retorna nulo e só o remoto observa.
+  const layaProvider =
+    env.LAYA_ENABLED === "true"
+      ? createLayaProvider({
+          loader: lazyLayaLoader(),
+          cacheDir: env.LAYA_CACHE,
+        })
+      : null;
   const answerDraft = (redactedText: string) =>
-    withJevShadowAnswer(baseAnswerDraft, redactedText, jevDeps, (fields) =>
-      app.log.info(fields, "jev shadow diverge do assistente"),
+    withJevShadowAnswer(
+      baseAnswerDraft,
+      redactedText,
+      jevDeps,
+      (fields) => app.log.info(fields, "jev shadow diverge do assistente"),
+      layaProvider
+        ? {
+            enabled: true,
+            query: (text) => layaProvider.query(text),
+          }
+        : undefined,
     );
   await registerWhatsappWebhook(app, {
     tickets: context.tickets,
